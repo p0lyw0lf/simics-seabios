@@ -9,6 +9,7 @@
 #include "pci.h" // pci_config_writeb
 #include "config.h" // CONFIG_*
 #include "pci_ids.h" // PCI_VENDOR_ID_INTEL
+#include "ioport.h" // outb
 
 // Test if 'addr' is in the range from 'start'..'start+size'
 #define IN_RANGE(addr, start, size) ({   \
@@ -20,6 +21,40 @@
 
 // On the emulators, the bios at 0xf0000 is also at 0xffff0000
 #define BIOS_SRC_ADDR 0xffff0000
+
+#if VIRTUTECH_PC_SHADOW
+
+#define Read_Only 1
+#define Write_Only 2
+#define Read_Write 3
+
+static void modify_shadow(unsigned long start, unsigned long len, int mode)
+{
+    int start_loc = ((int)(start >> 10) - 640) >> 1;
+    int len_remaining = len >> 11;
+    int i;
+    for (i = 0; i < len_remaining; i++) {
+        outb(start_loc + i, 0xfff4);
+        if (mode == Read_Only) {
+            outb(1, 0xfff5);
+        } else if (mode == Read_Write) {
+            outb(3, 0xfff5);
+        } else if (mode == Write_Only) {
+            outb(2, 0xfff5);
+        } else {
+            outb(0, 0xfff5);
+        }
+    }
+}
+
+static void
+__copy_bios(void)
+{
+    // Copy bios.
+    memcpy((void*)BUILD_BIOS_ADDR, (void*)BIOS_SRC_ADDR, BUILD_BIOS_SIZE);
+}
+
+#else
 
 // Enable shadowing and copy bios.
 static void
@@ -55,6 +90,8 @@ __make_bios_writable(u16 bdf)
     memcpy((void*)BUILD_BIOS_ADDR, (void*)BIOS_SRC_ADDR, BUILD_BIOS_SIZE);
 }
 
+#endif // VIRTUTECH_PC_SHADOW
+
 // Make the 0xc0000-0x100000 area read/writable.
 void
 make_bios_writable(void)
@@ -64,6 +101,19 @@ make_bios_writable(void)
 
     dprintf(3, "enabling shadow ram\n");
 
+#if VIRTUTECH_PC_SHADOW
+    /* Read (and execute) from PCI, write to RAM */
+    modify_shadow(0xf0000, 0x10000, Write_Only);
+
+    /* Run the copy from the high address to avoid simulator flushes after each
+       write (the flushes ruin performance) */
+    u32 pos = (u32)__copy_bios - BUILD_BIOS_ADDR + BIOS_SRC_ADDR;
+    void (*func)(void) = (void*)pos;
+    func();
+
+    /* Keep BIOS read/write */
+    modify_shadow(0xf0000, 0x10000, Read_Write);
+#else
     // Locate chip controlling ram shadowing.
     int bdf = pci_find_device(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82441);
     if (bdf < 0) {
@@ -84,6 +134,7 @@ make_bios_writable(void)
     }
     // Ram already present - just enable writes
     __make_bios_writable(bdf);
+#endif
 }
 
 // Make the BIOS code segment area (0xf0000) read-only.
@@ -95,6 +146,9 @@ make_bios_readonly(void)
 
     dprintf(3, "locking shadow ram\n");
 
+#if VIRTUTECH_PC_SHADOW
+    modify_shadow(0xf0000, 0x10000, Read_Only);
+#else
     int bdf = pci_find_device(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82441);
     if (bdf < 0) {
         dprintf(1, "Unable to lock ram - bridge not found\n");
@@ -118,4 +172,5 @@ make_bios_readonly(void)
 
     // Write protect 0xf0000-0x100000
     pci_config_writeb(bdf, 0x59, 0x10);
+#endif
 }
