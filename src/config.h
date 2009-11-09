@@ -205,5 +205,6 @@
 
 /* Options for running on the Virtutech Simics x86-440bx machine model */
 #define VIRTUTECH_PC_SHADOW 0
+#define USE_CMOS_BIOS_SMP_COUNT 1
 
 #endif // config.h
