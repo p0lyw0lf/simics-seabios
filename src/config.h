@@ -113,6 +113,8 @@
 #define CONFIG_UUID_BACKDOOR 1
 // Support generation of ACPI tables (for emulators)
 #define CONFIG_ACPI 1
+// Include HPET in ACPI tables
+#define CONFIG_ACPI_HPET 1
 // Support bios callbacks specific to via vgabios.
 #define CONFIG_VGAHOOKS 0
 // Support S3 resume handler.
