@@ -49,7 +49,7 @@
 // Support for IDE disk code
 #define CONFIG_ATA 1
 // Detect and try to use ATA bus mastering DMA controllers.
-#define CONFIG_ATA_DMA 0
+#define CONFIG_ATA_DMA 1
 // Use 32bit PIO accesses on ATA (minor optimization on PCI transfers)
 #define CONFIG_ATA_PIO32 0
 // Support for booting from a CD
@@ -95,7 +95,7 @@
 // Support finding and running option roms during post.
 #define CONFIG_OPTIONROMS 1
 // Set if option roms are already copied to 0xc0000-0xf0000
-#define CONFIG_OPTIONROMS_DEPLOYED 0
+#define CONFIG_OPTIONROMS_DEPLOYED 1
 // When option roms are not pre-deployed, SeaBIOS can copy an optionrom
 // from flash for up to 2 devices.
 #define OPTIONROM_VENDEV_1 0x00000000
@@ -114,9 +114,9 @@
 // Support generation of ACPI tables (for emulators)
 #define CONFIG_ACPI 1
 // Include HPET in ACPI tables
-#define CONFIG_ACPI_HPET 1
+#define CONFIG_ACPI_HPET 0
 // Select QEMU or Virtutech machine model
-#define CONFIG_VIRTUTECH_MODEL 0
+#define CONFIG_VIRTUTECH_MODEL 1
 // Support bios callbacks specific to via vgabios.
 #define CONFIG_VGAHOOKS 0
 // Support S3 resume handler.
@@ -208,7 +208,7 @@
 #define DEBUG_thread 2
 
 /* Options for running on the Virtutech Simics x86-440bx machine model */
-#define VIRTUTECH_PC_SHADOW 0
-#define USE_CMOS_BIOS_SMP_COUNT 1
+#define VIRTUTECH_PC_SHADOW 1
+#define USE_CMOS_BIOS_SMP_COUNT 0
 
 #endif // config.h
