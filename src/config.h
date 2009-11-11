@@ -115,6 +115,8 @@
 #define CONFIG_ACPI 1
 // Include HPET in ACPI tables
 #define CONFIG_ACPI_HPET 1
+// Select QEMU or Virtutech machine model
+#define CONFIG_VIRTUTECH_MODEL 0
 // Support bios callbacks specific to via vgabios.
 #define CONFIG_VGAHOOKS 0
 // Support S3 resume handler.

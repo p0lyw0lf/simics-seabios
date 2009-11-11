@@ -324,8 +324,13 @@ build_fadt(int bdf)
     int pm_sci_int = pci_config_readb(bdf, PCI_INTERRUPT_LINE);
     fadt->sci_int = cpu_to_le16(pm_sci_int);
     fadt->smi_cmd = cpu_to_le32(PORT_SMI_CMD);
-    fadt->acpi_enable = 0xf1;
-    fadt->acpi_disable = 0xf0;
+    if (CONFIG_VIRTUTECH_MODEL) {
+            fadt->acpi_enable = 0xf0;
+            fadt->acpi_disable = 0xf1;
+    } else {
+            fadt->acpi_enable = 0xf1;
+            fadt->acpi_disable = 0xf0;
+    }
     fadt->pm1a_evt_blk = cpu_to_le32(PORT_ACPI_PM_BASE);
     fadt->pm1a_cnt_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x04);
     fadt->pm_tmr_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x08);
@@ -334,10 +339,20 @@ build_fadt(int bdf)
     fadt->pm_tmr_len = 4;
     fadt->plvl2_lat = cpu_to_le16(0xfff); // C2 state not supported
     fadt->plvl3_lat = cpu_to_le16(0xfff); // C3 state not supported
-    fadt->gpe0_blk = cpu_to_le32(0xafe0);
+    if (CONFIG_VIRTUTECH_MODEL)
+            fadt->gpe0_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x0c);
+    else
+            fadt->gpe0_blk = cpu_to_le32(0xafe0);
     fadt->gpe0_blk_len = 4;
-    /* WBINVD + PROC_C1 + SLP_BUTTON + FIX_RTC */
-    fadt->flags = cpu_to_le32((1 << 0) | (1 << 2) | (1 << 5) | (1 << 6));
+    if (CONFIG_VIRTUTECH_MODEL) {
+            /* WBINVD + PWR_BUTTON + SLP_BUTTON + FIX_RTC */
+            fadt->flags = cpu_to_le32((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6));
+            /* Legacy devices and 8042 present */
+            fadt->ia32_boot_arch = 3;
+    } else {
+            /* WBINVD + PROC_C1 + SLP_BUTTON + FIX_RTC */
+            fadt->flags = cpu_to_le32((1 << 0) | (1 << 2) | (1 << 5) | (1 << 6));
+    }
 
     build_header((void*)fadt, FACP_SIGNATURE, sizeof(*fadt), 1);
 
