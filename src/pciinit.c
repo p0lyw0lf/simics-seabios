@@ -53,11 +53,13 @@ static void pci_bios_init_bridges(u16 bdf)
 
     if (vendor_id == PCI_VENDOR_ID_INTEL
         && (device_id == PCI_DEVICE_ID_INTEL_82371SB_0
-            || device_id == PCI_DEVICE_ID_INTEL_82371AB_0)) {
+            || device_id == PCI_DEVICE_ID_INTEL_82371AB_0
+            || device_id == PCI_DEVICE_ID_INTEL_ICH10_0
+            || device_id == PCI_DEVICE_ID_INTEL_ICH10_3)) {
         int i, irq;
         u8 elcr[2];
 
-        /* PIIX3/PIIX4 PCI to ISA bridge */
+        /* PIIX3/PIIX4/ICH10 PCI to ISA bridge */
 
         elcr[0] = 0x00;
         elcr[1] = 0x00;
@@ -70,7 +72,7 @@ static void pci_bios_init_bridges(u16 bdf)
         }
         outb(elcr[0], 0x4d0);
         outb(elcr[1], 0x4d1);
-        dprintf(1, "PIIX3/PIIX4 init: elcr=%02x %02x\n",
+        dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n",
                 elcr[0], elcr[1]);
     }
 }
@@ -88,10 +90,8 @@ static void pci_bios_init_device(u16 bdf)
             , pci_bdf_to_bus(bdf), pci_bdf_to_devfn(bdf), vendor_id, device_id);
     switch (class) {
     case PCI_CLASS_STORAGE_IDE:
-        if (vendor_id == PCI_VENDOR_ID_INTEL
-            && (device_id == PCI_DEVICE_ID_INTEL_82371SB_1
-                || device_id == PCI_DEVICE_ID_INTEL_82371AB)) {
-            /* PIIX3/PIIX4 IDE */
+        if (vendor_id == PCI_VENDOR_ID_INTEL) {
+            /* PIIX3/PIIX4/ICH IDE */
             pci_config_writew(bdf, 0x40, 0x8000); // enable IDE0
             pci_config_writew(bdf, 0x42, 0x8000); // enable IDE1
             goto default_map;
@@ -160,7 +160,15 @@ static void pci_bios_init_device(u16 bdf)
     }
 
     /* enable memory mappings */
-    pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+    if (class != PCI_CLASS_BRIDGE_PCI) {
+            /* TODO-X58: We need to handle PCI-to-PCI bridges in a special
+               way. This should be done similarly to the PCI-to-PCI
+               initialization code in the Virtutech BIOS (search for 'Header
+               type 1. PCI-to-PCI bridge' in rombios.c). This workaround will
+               work as long as all PCI buses expect 0 (the top-level bus in the
+               northbridge) are empty. */
+            pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+    }
 
     /* map the interrupt */
     pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
@@ -173,7 +181,6 @@ static void pci_bios_init_device(u16 bdf)
     if (vendor_id == PCI_VENDOR_ID_INTEL
         && device_id == PCI_DEVICE_ID_INTEL_82371AB_3) {
         /* PIIX4 Power Management device (for ACPI) */
-
         // acpi sci is hardwired to 9
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, 9);
 
@@ -181,6 +188,15 @@ static void pci_bios_init_device(u16 bdf)
         pci_config_writeb(bdf, 0x80, 0x01); /* enable PM io space */
         pci_config_writel(bdf, 0x90, PORT_SMB_BASE | 1);
         pci_config_writeb(bdf, 0xd2, 0x09); /* enable SMBus io space */
+    }
+    if (vendor_id == PCI_VENDOR_ID_INTEL
+        && (device_id == PCI_DEVICE_ID_INTEL_ICH10_0 ||
+            device_id == PCI_DEVICE_ID_INTEL_ICH10_3)) {
+        /* ICH10 LPC device, power management (for ACPI) */
+        pci_config_writeb(bdf, PCI_INTERRUPT_LINE, 9); // SCI IRQ 9
+
+        pci_config_writel(bdf, 0x40, PORT_ACPI_PM_BASE | 1);
+        pci_config_writeb(bdf, 0x44, 0x80); // ACPI enabled, SCI IRQ 9
     }
 }
 

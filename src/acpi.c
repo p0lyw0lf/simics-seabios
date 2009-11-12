@@ -268,6 +268,29 @@ struct srat_memory_affinity
     u32    reserved3[2];
 } PACKED;
 
+typedef struct {
+    u16 vendid;
+    u16 devid;
+    u32 gpe0_blk;
+    u32 gpe0_blk_len;
+} southbridge_info_t;
+
+static const southbridge_info_t acpi_southbridge_vec[] = {
+        // PIIX4
+        { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3,
+          0xafe0, 4 },
+
+        // ICH10
+        { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
+          PORT_ACPI_PM_BASE + 0x20, 16 },
+
+        // ICH10 (variant)
+        { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
+          PORT_ACPI_PM_BASE + 0x20, 16 },
+
+        { 0, 0 }
+};
+
 #include "acpi-dsdt.hex"
 
 static inline u16 cpu_to_le16(u16 x)
@@ -296,7 +319,7 @@ build_header(struct acpi_table_header *h, u32 sig, int len, u8 rev)
 }
 
 static void*
-build_fadt(int bdf)
+build_fadt(int bdf, int sb_id)
 {
     struct fadt_descriptor_rev1 *fadt = malloc_high(sizeof(*fadt));
     struct facs_descriptor_rev1 *facs = memalign_high(64, sizeof(*facs));
@@ -339,11 +362,8 @@ build_fadt(int bdf)
     fadt->pm_tmr_len = 4;
     fadt->plvl2_lat = cpu_to_le16(0xfff); // C2 state not supported
     fadt->plvl3_lat = cpu_to_le16(0xfff); // C3 state not supported
-    if (CONFIG_VIRTUTECH_MODEL)
-            fadt->gpe0_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x0c);
-    else
-            fadt->gpe0_blk = cpu_to_le32(0xafe0);
-    fadt->gpe0_blk_len = 4;
+    fadt->gpe0_blk = acpi_southbridge_vec[sb_id].gpe0_blk;
+    fadt->gpe0_blk_len = acpi_southbridge_vec[sb_id].gpe0_blk_len;
     if (CONFIG_VIRTUTECH_MODEL) {
             /* WBINVD + PWR_BUTTON + SLP_BUTTON + FIX_RTC */
             fadt->flags = cpu_to_le32((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6));
@@ -625,9 +645,18 @@ acpi_bios_init(void)
 
     dprintf(3, "init ACPI tables\n");
 
-    // This code is hardcoded for PIIX4 Power Management device.
-    int bdf = pci_find_device(PCI_VENDOR_ID_INTEL
-                              , PCI_DEVICE_ID_INTEL_82371AB_3);
+    int bdf = -1;
+    u16 i;
+    int sb_id = -1;
+    for (i = 0; acpi_southbridge_vec[i].vendid; i++) {
+            bdf = pci_find_device(acpi_southbridge_vec[i].vendid,
+                                  acpi_southbridge_vec[i].devid);
+            if (bdf >= 0) {
+                    sb_id = i;
+                    break;
+            }
+    }
+
     if (bdf < 0)
         // Device not found
         return;
@@ -649,14 +678,14 @@ acpi_bios_init(void)
     } while(0)
 
     // Add tables
-    ACPI_INIT_TABLE(build_fadt(bdf));
+    ACPI_INIT_TABLE(build_fadt(bdf, sb_id));
     ACPI_INIT_TABLE(build_ssdt());
     ACPI_INIT_TABLE(build_madt());
     if (CONFIG_ACPI_HPET)
             ACPI_INIT_TABLE(build_hpet());
     ACPI_INIT_TABLE(build_srat());
 
-    u16 i, external_tables = qemu_cfg_acpi_additional_tables();
+    u16 external_tables = qemu_cfg_acpi_additional_tables();
 
     for(i = 0; i < external_tables; i++) {
         u16 len = qemu_cfg_next_acpi_table_len();

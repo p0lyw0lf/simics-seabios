@@ -83,6 +83,8 @@ smm_init(void)
 
     dprintf(3, "init smm\n");
 
+    /* TODO-X58: SMM initialization. We don't really need SMM, so this is far
+       from urgent. */
     // This code is hardcoded for PIIX4 Power Management device.
     int bdf = pci_find_device(PCI_VENDOR_ID_INTEL
                               , PCI_DEVICE_ID_INTEL_82371AB_3);
