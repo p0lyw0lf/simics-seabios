@@ -46,37 +46,6 @@ static int pci_slot_get_pirq(u16 bdf, int irq_num)
     return (irq_num + slot_addend) & 3;
 }
 
-static void pci_bios_init_bridges(u16 bdf)
-{
-    u16 vendor_id = pci_config_readw(bdf, PCI_VENDOR_ID);
-    u16 device_id = pci_config_readw(bdf, PCI_DEVICE_ID);
-
-    if (vendor_id == PCI_VENDOR_ID_INTEL
-        && (device_id == PCI_DEVICE_ID_INTEL_82371SB_0
-            || device_id == PCI_DEVICE_ID_INTEL_82371AB_0
-            || device_id == PCI_DEVICE_ID_INTEL_ICH10_0
-            || device_id == PCI_DEVICE_ID_INTEL_ICH10_3)) {
-        int i, irq;
-        u8 elcr[2];
-
-        /* PIIX3/PIIX4/ICH10 PCI to ISA bridge */
-
-        elcr[0] = 0x00;
-        elcr[1] = 0x00;
-        for (i = 0; i < 4; i++) {
-            irq = pci_irqs[i];
-            /* set to trigger level */
-            elcr[irq >> 3] |= (1 << (irq & 7));
-            /* activate irq remapping in PIIX */
-            pci_config_writeb(bdf, 0x60 + i, irq);
-        }
-        outb(elcr[0], 0x4d0);
-        outb(elcr[1], 0x4d1);
-        dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n",
-                elcr[0], elcr[1]);
-    }
-}
-
 static void pci_bios_init_device(u16 bdf)
 {
     int class;
@@ -198,6 +167,30 @@ static void pci_bios_init_device(u16 bdf)
         pci_config_writel(bdf, 0x40, PORT_ACPI_PM_BASE | 1);
         pci_config_writeb(bdf, 0x44, 0x80); // ACPI enabled, SCI IRQ 9
     }
+    if (vendor_id == PCI_VENDOR_ID_INTEL
+        && (device_id == PCI_DEVICE_ID_INTEL_82371SB_0
+            || device_id == PCI_DEVICE_ID_INTEL_82371AB_0
+            || device_id == PCI_DEVICE_ID_INTEL_ICH10_0
+            || device_id == PCI_DEVICE_ID_INTEL_ICH10_3)) {
+        int i, irq;
+        u8 elcr[2];
+
+        /* PIIX3/PIIX4/ICH10 PCI to ISA bridge */
+
+        elcr[0] = 0x00;
+        elcr[1] = 0x00;
+        for (i = 0; i < 4; i++) {
+            irq = pci_irqs[i];
+            /* set to trigger level */
+            elcr[irq >> 3] |= (1 << (irq & 7));
+            /* activate irq remapping in PIIX */
+            pci_config_writeb(bdf, 0x60 + i, irq);
+        }
+        outb(elcr[0], 0x4d0);
+        outb(elcr[1], 0x4d1);
+        dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n",
+                elcr[0], elcr[1]);
+    }
 }
 
 void
@@ -213,9 +206,6 @@ pci_setup(void)
     pci_bios_mem_addr = BUILD_PCIMEM_START;
 
     int bdf, max;
-    foreachpci(bdf, max) {
-        pci_bios_init_bridges(bdf);
-    }
     foreachpci(bdf, max) {
         pci_bios_init_device(bdf);
     }
