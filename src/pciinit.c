@@ -14,6 +14,7 @@
 #define PCI_ROM_SLOT 6
 #define PCI_NUM_REGIONS 7
 
+static u8 pci_bios_next_bus;
 static u32 pci_bios_io_addr;
 static u32 pci_bios_mem_addr;
 /* host irqs corresponding to PCI irqs A-D */
@@ -37,11 +38,12 @@ static void pci_set_io_region_addr(u16 bdf, int region_num, u32 addr)
     dprintf(1, "region %d: 0x%08x\n", region_num, addr);
 }
 
-static void pci_bios_init_device(u16 bdf)
+static int pci_bios_init_device(u16 bdf, int irq_offset)
 {
     int class;
     u32 *paddr;
     int i, pin, pic_irq, vendor_id, device_id;
+    int enable_vga_out = 0;
 
     class = pci_config_readw(bdf, PCI_CLASS_DEVICE);
     vendor_id = pci_config_readw(bdf, PCI_VENDOR_ID);
@@ -119,21 +121,88 @@ static void pci_bios_init_device(u16 bdf)
         break;
     }
 
-    /* enable memory mappings */
-    if (class != PCI_CLASS_BRIDGE_PCI) {
-            /* TODO-X58: We need to handle PCI-to-PCI bridges in a special
-               way. This should be done similarly to the PCI-to-PCI
-               initialization code in the Virtutech BIOS (search for 'Header
-               type 1. PCI-to-PCI bridge' in rombios.c). This workaround will
-               work as long as all PCI buses expect 0 (the top-level bus in the
-               northbridge) are empty. */
-            pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+    if (class == PCI_CLASS_BRIDGE_PCI) {
+        int enable_vga = 0;
+        u16 secondary_bus = pci_bios_next_bus++;
+        
+        pci_config_writeb(bdf, PCI_PRIMARY_BUS, pci_bdf_to_bus(bdf));
+        pci_config_writeb(bdf, PCI_SECONDARY_BUS, secondary_bus);
+        pci_config_writeb(bdf, PCI_SUBORDINATE_BUS, 255); // temporary
+
+        // Round next_memory to a 1Mb boundary
+        // (smallest region forwardable for memory)
+        pci_bios_mem_addr = ALIGN(pci_bios_mem_addr, 1*1024*1024);
+
+        // Round next_io to a 4kb boundary (smallest
+        // region forwardable for I/O)
+        pci_bios_io_addr = ALIGN(pci_bios_io_addr, 4*1024);
+
+        // Set memory base
+        pci_config_writew(bdf, PCI_MEMORY_BASE, pci_bios_mem_addr >> 16);
+        dprintf(1, "PCI bus %d memory base 0x%08x\n", secondary_bus, pci_bios_mem_addr);
+
+        // Set I/O base
+        pci_config_writeb(bdf, PCI_IO_BASE, pci_bios_io_addr >> 8);
+        dprintf(1, "PCI bus %d i/o base 0x%08x\n", secondary_bus, pci_bios_io_addr);
+
+        // Initialize everything on subordinate buses
+        int sub_bdf, sub_max;
+        int sub_irq_offset = 0;
+        if (pci_bdf_to_bus(bdf) > 0)
+                sub_irq_offset = irq_offset + pci_bdf_to_dev(bdf);
+        for (sub_max = (secondary_bus + 1) << 8, sub_bdf = (secondary_bus << 8);
+             sub_bdf >= 0 && sub_bdf < (secondary_bus + 1) << 8;
+             sub_bdf = pci_next(sub_bdf+1, &sub_max)) {
+            enable_vga |= pci_bios_init_device(sub_bdf, sub_irq_offset);
+            enable_vga_out |= enable_vga;
+        }
+
+        // Set real subordinate bus number
+        pci_config_writeb(bdf, PCI_SUBORDINATE_BUS, pci_bios_next_bus - 1);
+
+        // Round to 1Mb and set memory limit
+        pci_bios_mem_addr = ALIGN(pci_bios_mem_addr, 1*1024*1024);
+        pci_config_writew(bdf, PCI_MEMORY_LIMIT, (pci_bios_mem_addr - 1*1024*1024) >> 16);
+        dprintf(1, "PCI subordinate bus %d memory limit 0x%08x\n", pci_bios_next_bus - 1, pci_bios_mem_addr);
+
+        // Round to 4kb and set I/O limit
+        pci_bios_io_addr = ALIGN(pci_bios_io_addr, 4*1024);
+        pci_config_writeb(bdf, PCI_IO_LIMIT, (pci_bios_io_addr - 4*1024) >> 8);
+        dprintf(1, "PCI subordinate bus %d i/o limit 0x%08x\n", pci_bios_next_bus - 1, pci_bios_io_addr);
+
+        // Disable prefetchable memory
+        pci_config_writew(bdf, PCI_PREF_MEMORY_BASE, 0x10);
+        pci_config_writew(bdf, PCI_PREF_MEMORY_LIMIT, 0x00);
+
+        // Enable I/O space, memory space, and bus master
+        pci_config_writeb(bdf, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+
+        if (enable_vga)
+            pci_config_writeb(bdf, PCI_BRIDGE_CONTROL, 0x08);
+    } else {
+        if (pci_config_readw(bdf, PCI_CLASS_DEVICE) == PCI_CLASS_DISPLAY_VGA &&
+            pci_config_readb(bdf, PCI_CLASS_PROG) == 0) {
+            dprintf(1, "PCI: Enabling VGA decode for bus=%d devfn=0x%02x\n",
+                    pci_bdf_to_bus(bdf), pci_bdf_to_devfn(bdf));
+            enable_vga_out = 1;
+        }
+
+        // enable memory mappings
+        pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
     }
 
     /* map the interrupt */
     pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
     if (pin != 0) {
-        pic_irq = pci_irqs[pin - 1];
+        int irq = pin - 1;
+
+        // Rotate INTx lines as defined in the PCI-to-PCI bridge standard
+        if (pci_bdf_to_bus(bdf) > 0)
+                irq += pci_bdf_to_dev(bdf) & 0x3;
+        irq += irq_offset;
+        irq &= 3;
+
+        pic_irq = pci_irqs[irq];
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pic_irq);
     }
 
@@ -181,6 +250,8 @@ static void pci_bios_init_device(u16 bdf)
         dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n",
                 elcr[0], elcr[1]);
     }
+
+    return enable_vga_out;
 }
 
 void
@@ -192,11 +263,15 @@ pci_setup(void)
 
     dprintf(3, "pci setup\n");
 
+    pci_bios_next_bus = 1;
     pci_bios_io_addr = 0xc000;
     pci_bios_mem_addr = BUILD_PCIMEM_START;
 
     int bdf, max;
-    foreachpci(bdf, max) {
-        pci_bios_init_device(bdf);
+    // Initialize PCI through DFS starting from the root
+    for (max = 0x100, bdf = pci_next(0, &max);
+         bdf >= 0 && bdf < 0x100;
+         bdf=pci_next(bdf+1, &max)) {
+            pci_bios_init_device(bdf, 0);
     }
 }
