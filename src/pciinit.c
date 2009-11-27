@@ -37,15 +37,6 @@ static void pci_set_io_region_addr(u16 bdf, int region_num, u32 addr)
     dprintf(1, "region %d: 0x%08x\n", region_num, addr);
 }
 
-/* return the global irq number corresponding to a given device irq
-   pin. We could also use the bus number to have a more precise
-   mapping. */
-static int pci_slot_get_pirq(u16 bdf, int irq_num)
-{
-    int slot_addend = pci_bdf_to_dev(bdf) - 1;
-    return (irq_num + slot_addend) & 3;
-}
-
 static void pci_bios_init_device(u16 bdf)
 {
     int class;
@@ -142,8 +133,7 @@ static void pci_bios_init_device(u16 bdf)
     /* map the interrupt */
     pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
     if (pin != 0) {
-        pin = pci_slot_get_pirq(bdf, pin - 1);
-        pic_irq = pci_irqs[pin];
+        pic_irq = pci_irqs[pin - 1];
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pic_irq);
     }
 
