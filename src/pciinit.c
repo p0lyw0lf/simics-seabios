@@ -15,7 +15,9 @@
 #define PCI_NUM_REGIONS 7
 
 static u8 pci_bios_next_bus;
-static u32 pci_bios_io_addr;
+static u32 pci_bios_io_next;
+static u32 pci_bios_io_limit; // first invalid port from pci_bios_io_next
+static u32 pci_bios_io_next_chunk; // next port to use when reaching pci_bios_io_limit
 static u32 pci_bios_mem_addr;
 /* host irqs corresponding to PCI irqs A-D */
 static u8 pci_irqs[4] = {
@@ -40,16 +42,17 @@ static void pci_set_io_region_addr(u16 bdf, int region_num, u32 addr)
 
 static int pci_bios_init_device(u16 bdf, int irq_offset)
 {
-    int class;
+    int class, header;
     u32 *paddr;
     int i, pin, pic_irq, vendor_id, device_id;
     int enable_vga_out = 0;
 
     class = pci_config_readw(bdf, PCI_CLASS_DEVICE);
+    header = pci_config_readb(bdf, PCI_HEADER_TYPE);
     vendor_id = pci_config_readw(bdf, PCI_VENDOR_ID);
     device_id = pci_config_readw(bdf, PCI_DEVICE_ID);
-    dprintf(1, "PCI: bus=%d devfn=0x%02x: vendor_id=0x%04x device_id=0x%04x\n"
-            , pci_bdf_to_bus(bdf), pci_bdf_to_devfn(bdf), vendor_id, device_id);
+    dprintf(1, "PCI: bus=%d devfn=0x%02x: vendor_id=0x%04x device_id=0x%04x class=0x%x\n"
+            , pci_bdf_to_bus(bdf), pci_bdf_to_devfn(bdf), vendor_id, device_id, class);
     switch (class) {
     case PCI_CLASS_STORAGE_IDE:
         if (vendor_id == PCI_VENDOR_ID_INTEL) {
@@ -86,6 +89,10 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
     default_map:
         /* default memory mappings */
         for (i = 0; i < PCI_NUM_REGIONS; i++) {
+            if (header != PCI_HEADER_TYPE_NORMAL && i >= 2 && i != PCI_ROM_SLOT)
+                // Only 2 BARs for non-normal
+                continue;
+
             int ofs;
             if (i == PCI_ROM_SLOT)
                 ofs = PCI_ROM_ADDRESS;
@@ -109,10 +116,19 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
 
             if (val != 0) {
                 u32 size = (~(val & mask)) + 1;
-                if (val & PCI_BASE_ADDRESS_SPACE_IO)
-                    paddr = &pci_bios_io_addr;
-                else
+                if (val & PCI_BASE_ADDRESS_SPACE_IO) {
+                    u32 aligned_addr = ALIGN(pci_bios_io_next, size);
+                    if (pci_bios_io_limit && aligned_addr + size > pci_bios_io_limit) {
+                            // Does not fit, use next chunk
+                            pci_bios_io_next = pci_bios_io_next_chunk;
+                            pci_bios_io_limit = 0;
+                            paddr = &pci_bios_io_next;
+                    } else {
+                            paddr = &pci_bios_io_next;
+                    }
+                } else {
                     paddr = &pci_bios_mem_addr;
+                }
                 *paddr = ALIGN(*paddr, size);
                 pci_set_io_region_addr(bdf, i, *paddr);
                 *paddr += size;
@@ -129,21 +145,30 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
         pci_config_writeb(bdf, PCI_SECONDARY_BUS, secondary_bus);
         pci_config_writeb(bdf, PCI_SUBORDINATE_BUS, 255); // temporary
 
+        u32 old_next = pci_bios_io_next;
+        u32 old_limit = pci_bios_io_limit;
+
         // Round next_memory to a 1Mb boundary
         // (smallest region forwardable for memory)
         pci_bios_mem_addr = ALIGN(pci_bios_mem_addr, 1*1024*1024);
 
         // Round next_io to a 4kb boundary (smallest
         // region forwardable for I/O)
-        pci_bios_io_addr = ALIGN(pci_bios_io_addr, 4*1024);
+        if (pci_bios_io_limit) {
+                pci_bios_io_next = pci_bios_io_next_chunk;
+                pci_bios_io_limit = 0;
+        }
+        u32 io_before = pci_bios_io_next;
+        pci_bios_io_next = ALIGN(pci_bios_io_next, 4*1024);
 
         // Set memory base
         pci_config_writew(bdf, PCI_MEMORY_BASE, pci_bios_mem_addr >> 16);
         dprintf(1, "PCI bus %d memory base 0x%08x\n", secondary_bus, pci_bios_mem_addr);
 
         // Set I/O base
-        pci_config_writeb(bdf, PCI_IO_BASE, pci_bios_io_addr >> 8);
-        dprintf(1, "PCI bus %d i/o base 0x%08x\n", secondary_bus, pci_bios_io_addr);
+        u32 io_start = pci_bios_io_next;
+        pci_config_writeb(bdf, PCI_IO_BASE, pci_bios_io_next >> 8);
+        dprintf(1, "PCI bus %d i/o base 0x%08x\n", secondary_bus, pci_bios_io_next);
 
         // Initialize everything on subordinate buses
         int sub_bdf, sub_max;
@@ -163,12 +188,27 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
         // Round to 1Mb and set memory limit
         pci_bios_mem_addr = ALIGN(pci_bios_mem_addr, 1*1024*1024);
         pci_config_writew(bdf, PCI_MEMORY_LIMIT, (pci_bios_mem_addr - 1*1024*1024) >> 16);
-        dprintf(1, "PCI subordinate bus %d memory limit 0x%08x\n", pci_bios_next_bus - 1, pci_bios_mem_addr);
+        dprintf(1, "PCI subordinate bus %d memory limit 0x%08x\n", pci_bios_next_bus - 1, pci_bios_mem_addr-1);
 
-        // Round to 4kb and set I/O limit
-        pci_bios_io_addr = ALIGN(pci_bios_io_addr, 4*1024);
-        pci_config_writeb(bdf, PCI_IO_LIMIT, (pci_bios_io_addr - 4*1024) >> 8);
-        dprintf(1, "PCI subordinate bus %d i/o limit 0x%08x\n", pci_bios_next_bus - 1, pci_bios_io_addr);
+        if (pci_bios_io_next == io_start) {
+                // Nothing mapped. Let's not forward anything and reclaim the
+                // pre-allocated address space.
+                pci_config_writeb(bdf, PCI_IO_LIMIT, (io_start - 4*1024) >> 8);
+                pci_bios_io_next_chunk = io_before;
+                dprintf(1, "PCI subordinate bus %d no i/o forwarding\n", pci_bios_next_bus - 1);
+                pci_bios_io_next = old_next;
+                pci_bios_io_limit = old_limit;
+        } else {
+                // Round to 4kb and set I/O limit
+                pci_bios_io_next_chunk = ALIGN(pci_bios_io_next, 4*1024);
+                pci_config_writeb(bdf, PCI_IO_LIMIT, (pci_bios_io_next_chunk - 4*1024) >> 8);
+                dprintf(1, "PCI subordinate bus %d i/o limit 0x%08x\n", pci_bios_next_bus - 1, pci_bios_io_next_chunk-1);
+                pci_bios_io_next = old_next;
+                if (old_limit)
+                        pci_bios_io_limit = old_limit;
+                else
+                        pci_bios_io_limit = io_start;
+        }
 
         // Disable prefetchable memory
         pci_config_writew(bdf, PCI_PREF_MEMORY_BASE, 0x10);
@@ -264,7 +304,9 @@ pci_setup(void)
     dprintf(3, "pci setup\n");
 
     pci_bios_next_bus = 1;
-    pci_bios_io_addr = 0xc000;
+    pci_bios_io_next = 0x4000;
+    pci_bios_io_next_chunk = 0;
+    pci_bios_io_limit = 0;
     pci_bios_mem_addr = BUILD_PCIMEM_START;
 
     int bdf, max;
