@@ -42,58 +42,194 @@ DefinitionBlock (
             Name (_HID, EisaId ("PNP0A03"))
             Name (_ADR, 0x00)
             Name (_UID, 1)
-            Name(_PRT, Package() {
-                /* PCI IRQ routing table, example from ACPI 2.0a specification,
-                   section 6.2.8.1 */
-                /* Note: we provide the same info as the PCI routing
-                   table of the Bochs BIOS */
-#define prt_slot(nr, lnk0, lnk1, lnk2, lnk3) \
-       Package() { nr##ffff, 0, lnk0, 0 }, \
-       Package() { nr##ffff, 1, lnk1, 0 }, \
-       Package() { nr##ffff, 2, lnk2, 0 }, \
-       Package() { nr##ffff, 3, lnk3, 0 }
+			Name(_PRT, Package() {
+				// Slot 1
+				Package() {0x0001FFFF, 0, 0, 0xa},
+				Package() {0x0001FFFF, 1, 0, 0xa},
+				Package() {0x0001FFFF, 2, 0, 0xb},
+				Package() {0x0001FFFF, 3, 0, 0xb},
 
-#define prt_slot0(nr) prt_slot(nr, LNKD, LNKA, LNKB, LNKC)
-#define prt_slot1(nr) prt_slot(nr, LNKA, LNKB, LNKC, LNKD)
-#define prt_slot2(nr) prt_slot(nr, LNKB, LNKC, LNKD, LNKA)
-#define prt_slot3(nr) prt_slot(nr, LNKC, LNKD, LNKA, LNKB)
-               prt_slot0(0x0000),
-               /* Device 1 is power mgmt device, and can only use irq 9 */
-               Package() { 0x0001ffff, 0, 0, 9 },
-               Package() { 0x0001ffff, 1, LNKB, 0 },
-               Package() { 0x0001ffff, 2, LNKC, 0 },
-               Package() { 0x0001ffff, 3, LNKD, 0 },
-               prt_slot2(0x0002),
-               prt_slot3(0x0003),
-               prt_slot0(0x0004),
-               prt_slot1(0x0005),
-               prt_slot2(0x0006),
-               prt_slot3(0x0007),
-               prt_slot0(0x0008),
-               prt_slot1(0x0009),
-               prt_slot2(0x000a),
-               prt_slot3(0x000b),
-               prt_slot0(0x000c),
-               prt_slot1(0x000d),
-               prt_slot2(0x000e),
-               prt_slot3(0x000f),
-               prt_slot0(0x0010),
-               prt_slot1(0x0011),
-               prt_slot2(0x0012),
-               prt_slot3(0x0013),
-               prt_slot0(0x0014),
-               prt_slot1(0x0015),
-               prt_slot2(0x0016),
-               prt_slot3(0x0017),
-               prt_slot0(0x0018),
-               prt_slot1(0x0019),
-               prt_slot2(0x001a),
-               prt_slot3(0x001b),
-               prt_slot0(0x001c),
-               prt_slot1(0x001d),
-               prt_slot2(0x001e),
-               prt_slot3(0x001f),
-            })
+				// Slot 2
+				Package() {0x0002FFFF, 0, 0, 0xa},
+				Package() {0x0002FFFF, 1, 0, 0xa},
+				Package() {0x0002FFFF, 2, 0, 0xb},
+				Package() {0x0002FFFF, 3, 0, 0xb},
+
+				// Slot 3
+				Package() {0x0003FFFF, 0, 0, 0xa},
+				Package() {0x0003FFFF, 1, 0, 0xa},
+				Package() {0x0003FFFF, 2, 0, 0xb},
+				Package() {0x0003FFFF, 3, 0, 0xb},
+
+				// Slot 4
+				Package() {0x0004FFFF, 0, 0, 0xa},
+				Package() {0x0004FFFF, 1, 0, 0xa},
+				Package() {0x0004FFFF, 2, 0, 0xb},
+				Package() {0x0004FFFF, 3, 0, 0xb},
+
+				// Slot 5
+				Package() {0x0005FFFF, 0, 0, 0xa},
+				Package() {0x0005FFFF, 1, 0, 0xa},
+				Package() {0x0005FFFF, 2, 0, 0xb},
+				Package() {0x0005FFFF, 3, 0, 0xb},
+
+				// Slot 6
+				Package() {0x0006FFFF, 0, 0, 0xa},
+				Package() {0x0006FFFF, 1, 0, 0xa},
+				Package() {0x0006FFFF, 2, 0, 0xb},
+				Package() {0x0006FFFF, 3, 0, 0xb},
+
+				// Slot 7
+				Package() {0x0007FFFF, 0, 0, 0xa},
+				Package() {0x0007FFFF, 1, 0, 0xa},
+				Package() {0x0007FFFF, 2, 0, 0xb},
+				Package() {0x0007FFFF, 3, 0, 0xb},
+
+				// Slot 8
+				Package() {0x0008FFFF, 0, 0, 0xa},
+				Package() {0x0008FFFF, 1, 0, 0xa},
+				Package() {0x0008FFFF, 2, 0, 0xb},
+				Package() {0x0008FFFF, 3, 0, 0xb},
+
+				// Slot 9
+				Package() {0x0009FFFF, 0, 0, 0xa},
+				Package() {0x0009FFFF, 1, 0, 0xa},
+				Package() {0x0009FFFF, 2, 0, 0xb},
+				Package() {0x0009FFFF, 3, 0, 0xb},
+
+				// Slot 10
+				Package() {0x000AFFFF, 0, 0, 0xa},
+				Package() {0x000AFFFF, 1, 0, 0xa},
+				Package() {0x000AFFFF, 2, 0, 0xb},
+				Package() {0x000AFFFF, 3, 0, 0xb},
+
+				// Slot 11
+				Package() {0x000BFFFF, 0, 0, 0xa},
+				Package() {0x000BFFFF, 1, 0, 0xa},
+				Package() {0x000BFFFF, 2, 0, 0xb},
+				Package() {0x000BFFFF, 3, 0, 0xb},
+
+				// Slot 12
+				Package() {0x000CFFFF, 0, 0, 0xa},
+				Package() {0x000CFFFF, 1, 0, 0xa},
+				Package() {0x000CFFFF, 2, 0, 0xb},
+				Package() {0x000CFFFF, 3, 0, 0xb},
+
+				// Slot 13
+				Package() {0x000DFFFF, 0, 0, 0xa},
+				Package() {0x000DFFFF, 1, 0, 0xa},
+				Package() {0x000DFFFF, 2, 0, 0xb},
+				Package() {0x000DFFFF, 3, 0, 0xb},
+
+				// Slot 14
+				Package() {0x000EFFFF, 0, 0, 0xa},
+				Package() {0x000EFFFF, 1, 0, 0xa},
+				Package() {0x000EFFFF, 2, 0, 0xb},
+				Package() {0x000EFFFF, 3, 0, 0xb},
+
+				// Slot 15
+				Package() {0x000FFFFF, 0, 0, 0xa},
+				Package() {0x000FFFFF, 1, 0, 0xa},
+				Package() {0x000FFFFF, 2, 0, 0xb},
+				Package() {0x000FFFFF, 3, 0, 0xb},
+
+				// Slot 16
+				Package() {0x0010FFFF, 0, 0, 0xa},
+				Package() {0x0010FFFF, 1, 0, 0xa},
+				Package() {0x0010FFFF, 2, 0, 0xb},
+				Package() {0x0010FFFF, 3, 0, 0xb},
+
+				// Slot 17
+				Package() {0x0011FFFF, 0, 0, 0xa},
+				Package() {0x0011FFFF, 1, 0, 0xa},
+				Package() {0x0011FFFF, 2, 0, 0xb},
+				Package() {0x0011FFFF, 3, 0, 0xb},
+
+				// Slot 18
+				Package() {0x0012FFFF, 0, 0, 0xa},
+				Package() {0x0012FFFF, 1, 0, 0xa},
+				Package() {0x0012FFFF, 2, 0, 0xb},
+				Package() {0x0012FFFF, 3, 0, 0xb},
+
+				// Slot 19
+				Package() {0x0013FFFF, 0, 0, 0xa},
+				Package() {0x0013FFFF, 1, 0, 0xa},
+				Package() {0x0013FFFF, 2, 0, 0xb},
+				Package() {0x0013FFFF, 3, 0, 0xb},
+
+				// Slot 20
+				Package() {0x0014FFFF, 0, 0, 0xa},
+				Package() {0x0014FFFF, 1, 0, 0xa},
+				Package() {0x0014FFFF, 2, 0, 0xb},
+				Package() {0x0014FFFF, 3, 0, 0xb},
+
+				// Slot 21
+				Package() {0x0015FFFF, 0, 0, 0xa},
+				Package() {0x0015FFFF, 1, 0, 0xa},
+				Package() {0x0015FFFF, 2, 0, 0xb},
+				Package() {0x0015FFFF, 3, 0, 0xb},
+
+				// Slot 22
+				Package() {0x0016FFFF, 0, 0, 0xa},
+				Package() {0x0016FFFF, 1, 0, 0xa},
+				Package() {0x0016FFFF, 2, 0, 0xb},
+				Package() {0x0016FFFF, 3, 0, 0xb},
+
+				// Slot 23
+				Package() {0x0017FFFF, 0, 0, 0xa},
+				Package() {0x0017FFFF, 1, 0, 0xa},
+				Package() {0x0017FFFF, 2, 0, 0xb},
+				Package() {0x0017FFFF, 3, 0, 0xb},
+
+				// Slot 24
+				Package() {0x0018FFFF, 0, 0, 0xa},
+				Package() {0x0018FFFF, 1, 0, 0xa},
+				Package() {0x0018FFFF, 2, 0, 0xb},
+				Package() {0x0018FFFF, 3, 0, 0xb},
+
+				// Slot 25
+				Package() {0x0019FFFF, 0, 0, 0xa},
+				Package() {0x0019FFFF, 1, 0, 0xa},
+				Package() {0x0019FFFF, 2, 0, 0xb},
+				Package() {0x0019FFFF, 3, 0, 0xb},
+
+				// Slot 26
+				Package() {0x001AFFFF, 0, 0, 0xa},
+				Package() {0x001AFFFF, 1, 0, 0xa},
+				Package() {0x001AFFFF, 2, 0, 0xb},
+				Package() {0x001AFFFF, 3, 0, 0xb},
+
+				// Slot 27
+				Package() {0x001BFFFF, 0, 0, 0xa},
+				Package() {0x001BFFFF, 1, 0, 0xa},
+				Package() {0x001BFFFF, 2, 0, 0xb},
+				Package() {0x001BFFFF, 3, 0, 0xb},
+
+				// Slot 28
+				Package() {0x001CFFFF, 0, 0, 0xa},
+				Package() {0x001CFFFF, 1, 0, 0xa},
+				Package() {0x001CFFFF, 2, 0, 0xb},
+				Package() {0x001CFFFF, 3, 0, 0xb},
+
+				// Slot 29
+				Package() {0x001DFFFF, 0, 0, 0xa},
+				Package() {0x001DFFFF, 1, 0, 0xa},
+				Package() {0x001DFFFF, 2, 0, 0xb},
+				Package() {0x001DFFFF, 3, 0, 0xb},
+
+				// Slot 30
+				Package() {0x001EFFFF, 0, 0, 0xa},
+				Package() {0x001EFFFF, 1, 0, 0xa},
+				Package() {0x001EFFFF, 2, 0, 0xb},
+				Package() {0x001EFFFF, 3, 0, 0xb},
+
+				// Slot 31
+				Package() {0x001FFFFF, 0, 0, 0xa},
+				Package() {0x001FFFFF, 1, 0, 0xa},
+				Package() {0x001FFFFF, 2, 0, 0xb},
+				Package() {0x001FFFFF, 3, 0, 0xb}
+			}
+			)
 
             OperationRegion(PCST, SystemIO, 0xae00, 0x08)
             Field (PCST, DWordAcc, NoLock, WriteAsZeros)
@@ -439,187 +575,6 @@ DefinitionBlock (
              PRQ2,   8,
              PRQ3,   8
          }
-
-        Device(LNKA){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 1)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ0, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ0, 0x80, PRQ0)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ0, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ0)
-                }
-        }
-        Device(LNKB){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 2)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ1, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ1, 0x80, PRQ1)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ1, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ1)
-                }
-        }
-        Device(LNKC){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 3)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ2, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ2, 0x80, PRQ2)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ2, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ2)
-                }
-        }
-        Device(LNKD){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 4)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ3, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ3, 0x80, PRQ3)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ3, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ3)
-                }
-        }
     }
 
     /*
