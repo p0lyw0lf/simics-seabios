@@ -89,7 +89,8 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
     default_map:
         /* default memory mappings */
         for (i = 0; i < PCI_NUM_REGIONS; i++) {
-            if (header != PCI_HEADER_TYPE_NORMAL && i >= 2 && i != PCI_ROM_SLOT)
+            if ((header & ~PCI_HEADER_TYPE_MF) != PCI_HEADER_TYPE_NORMAL &&
+                i >= 2 && i != PCI_ROM_SLOT)
                 // Only 2 BARs for non-normal
                 continue;
 
