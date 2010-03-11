@@ -280,11 +280,19 @@ static const southbridge_info_t acpi_southbridge_vec[] = {
         { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3,
           0xafe0, 4 },
 
-        // ICH10
+        // ICH10D0
         { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
           PORT_ACPI_PM_BASE + 0x20, 16 },
 
-        // ICH10 (variant)
+        // ICH10R
+        { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
+          PORT_ACPI_PM_BASE + 0x20, 16 },
+
+        // ICH10 (consumer)
+        { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2,
+          PORT_ACPI_PM_BASE + 0x20, 16 },
+
+        // ICH10D
         { PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
           PORT_ACPI_PM_BASE + 0x20, 16 },
 

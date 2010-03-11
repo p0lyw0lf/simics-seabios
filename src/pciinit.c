@@ -260,6 +260,8 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
     }
     if (vendor_id == PCI_VENDOR_ID_INTEL
         && (device_id == PCI_DEVICE_ID_INTEL_ICH10_0 ||
+            device_id == PCI_DEVICE_ID_INTEL_ICH10_1 ||
+            device_id == PCI_DEVICE_ID_INTEL_ICH10_2 ||
             device_id == PCI_DEVICE_ID_INTEL_ICH10_3)) {
         /* ICH10 LPC device, power management (for ACPI) */
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, 9); // SCI IRQ 9
@@ -271,6 +273,8 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
         && (device_id == PCI_DEVICE_ID_INTEL_82371SB_0
             || device_id == PCI_DEVICE_ID_INTEL_82371AB_0
             || device_id == PCI_DEVICE_ID_INTEL_ICH10_0
+            || device_id == PCI_DEVICE_ID_INTEL_ICH10_1
+            || device_id == PCI_DEVICE_ID_INTEL_ICH10_2
             || device_id == PCI_DEVICE_ID_INTEL_ICH10_3)) {
         int i, irq;
         u8 elcr[2];
