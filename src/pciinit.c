@@ -46,6 +46,7 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
     u32 *paddr;
     int i, pin, pic_irq, vendor_id, device_id;
     int enable_vga_out = 0;
+    u8 bar_set = 0;
 
     class = pci_config_readw(bdf, PCI_CLASS_DEVICE);
     header = pci_config_readb(bdf, PCI_HEADER_TYPE);
@@ -59,14 +60,16 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
             /* PIIX3/PIIX4/ICH IDE */
             pci_config_writew(bdf, 0x40, 0x8000); // enable IDE0
             pci_config_writew(bdf, 0x42, 0x8000); // enable IDE1
-            goto default_map;
-        } else {
-            /* IDE: we map it as in ISA mode */
-            pci_set_io_region_addr(bdf, 0, PORT_ATA1_CMD_BASE);
-            pci_set_io_region_addr(bdf, 1, PORT_ATA1_CTRL_BASE);
-            pci_set_io_region_addr(bdf, 2, PORT_ATA2_CMD_BASE);
-            pci_set_io_region_addr(bdf, 3, PORT_ATA2_CTRL_BASE);
+            if (device_id != 0x3a20)
+                goto default_map;
         }
+        /* IDEs: we map it as in ISA mode */
+        pci_set_io_region_addr(bdf, 0, PORT_ATA1_CMD_BASE);
+        pci_set_io_region_addr(bdf, 1, PORT_ATA1_CTRL_BASE);
+        pci_set_io_region_addr(bdf, 2, PORT_ATA2_CMD_BASE);
+        pci_set_io_region_addr(bdf, 3, PORT_ATA2_CTRL_BASE);
+        bar_set = 0xf;
+        goto default_map;
         break;
     case PCI_CLASS_SYSTEM_PIC:
         /* PIC */
@@ -92,6 +95,9 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
             if ((header & ~PCI_HEADER_TYPE_MF) != PCI_HEADER_TYPE_NORMAL &&
                 i >= 2 && i != PCI_ROM_SLOT)
                 // Only 2 BARs for non-normal
+                continue;
+
+            if (bar_set & (1 << i))
                 continue;
 
             int ofs;
