@@ -31,7 +31,7 @@
 // Support floppy drive access
 #define CONFIG_FLOPPY 1
 // Support USB devices
-#define CONFIG_USB 1
+#define CONFIG_USB 0
 // Support USB UHCI controllers
 #define CONFIG_USB_UHCI 1
 // Support USB OHCI controllers
@@ -210,6 +210,6 @@
 /* Options for running on the Virtutech Simics x86-440bx machine model */
 #define VIRTUTECH_PC_SHADOW 1
 #define USE_CMOS_BIOS_SMP_COUNT 0
-#define KBD_RESET_HAS_2ND_BYTE 1
+#define KBD_RESET_HAS_2ND_BYTE 0
 
 #endif // config.h
