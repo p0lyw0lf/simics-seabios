@@ -53,6 +53,15 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
     device_id = pci_config_readw(bdf, PCI_DEVICE_ID);
     dprintf(1, "PCI: bus=%d devfn=0x%02x: vendor_id=0x%04x device_id=0x%04x class=0x%x\n"
             , pci_bdf_to_bus(bdf), pci_bdf_to_devfn(bdf), vendor_id, device_id, class);
+
+    // map RCBA (root complex base address)
+    if (vendor_id == 0x8086 && device_id == 0x3a16 && class == 0x601) {
+        pci_bios_mem_addr = ALIGN(pci_bios_mem_addr, 0x4000);
+        pci_config_writel(bdf, 0xf0 /* RCBA */, pci_bios_mem_addr | 0x1);
+        *(u32 *)(pci_bios_mem_addr + 0x3404) = 0x80; /* enable HPET */
+        pci_bios_mem_addr += 0x4000;
+    }
+
     switch (class) {
     case PCI_CLASS_STORAGE_IDE:
         if (vendor_id == PCI_VENDOR_ID_INTEL) {
@@ -68,6 +77,7 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
             pci_set_io_region_addr(bdf, 3, PORT_ATA2_CTRL_BASE);
         }
         break;
+
     case PCI_CLASS_SYSTEM_PIC:
         /* PIC */
         if (vendor_id == PCI_VENDOR_ID_IBM) {
