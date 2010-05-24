@@ -98,6 +98,16 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
         }
         break;
     default:
+        if (vendor_id == 0x8086 && device_id == 0x7192) {
+            /* 82443BX with AGP_DIS, minimal aperture 4 MB if someone enables
+               it */
+            pci_config_writeb(bdf, 0xb4, 0x3f);
+
+            /* Do not enable apperture */
+            break;
+        }
+        /* fall-through */
+
     default_map:
         /* default memory mappings */
         for (i = 0; i < PCI_NUM_REGIONS; i++) {
