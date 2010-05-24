@@ -33,7 +33,8 @@ static inline void irq_restore(unsigned long flags)
 
 static inline void cpu_relax(void)
 {
-    asm volatile("rep ; nop": : :"memory");
+    //asm volatile("rep ; nop": : :"memory");
+    asm volatile("pause": : :"memory");
 }
 
 // Atomically enable irqs and sleep until an irq; then re-disable irqs.
