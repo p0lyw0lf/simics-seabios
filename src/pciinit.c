@@ -139,6 +139,11 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
                 *paddr = ALIGN(*paddr, size);
                 pci_set_io_region_addr(bdf, i, *paddr);
                 *paddr += size;
+
+                if (pci_bios_io_next < 0x4000)
+                    panic("PCI I/O address wrap-around\n");
+                if (pci_bios_mem_addr < BUILD_PCIMEM_START)
+                    panic("PCI memory address wrap-around\n");
             }
         }
         break;
