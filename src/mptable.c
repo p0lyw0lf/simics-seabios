@@ -56,7 +56,7 @@ mptable_init(void)
     for (i = 0; i < MaxCountCPUs; i+=pkgcpus) {
         memset(cpu, 0, sizeof(*cpu));
         cpu->type = MPT_TYPE_CPU;
-        cpu->apicid = i;
+        cpu->apicid = qemu_cfg_get_apic_id(i);
         cpu->apicver = apic_version;
         /* cpu flags: enabled, bootstrap cpu */
         cpu->cpuflag = (i < CountCPUs) | ((i == 0) << 1);

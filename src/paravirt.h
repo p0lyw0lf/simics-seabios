@@ -32,6 +32,7 @@ static inline int kvm_para_available(void)
 #define QEMU_CFG_BOOT_MENU		0x0e
 #define QEMU_CFG_MAX_CPUS		0x0f
 #define QEMU_CFG_FILE_DIR               0x19
+#define QEMU_CFG_APIC_ID                0x100 /* 0x1ff for 256 threads */
 #define QEMU_CFG_ARCH_LOCAL		0x8000
 #define QEMU_CFG_ACPI_TABLES		(QEMU_CFG_ARCH_LOCAL + 0)
 #define QEMU_CFG_SMBIOS_ENTRIES		(QEMU_CFG_ARCH_LOCAL + 1)
@@ -54,6 +55,7 @@ int qemu_cfg_smbios_load_external(int type, char **p, unsigned *nr_structs,
 int qemu_cfg_get_numa_nodes(void);
 void qemu_cfg_get_numa_data(u64 *data, int n);
 u16 qemu_cfg_get_max_cpus(void);
+u16 qemu_cfg_get_apic_id(int cpu);
 
 typedef struct QemuCfgFile {
     u32  size;        /* file size */
