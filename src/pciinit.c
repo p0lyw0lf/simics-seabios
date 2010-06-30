@@ -128,6 +128,13 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
                             paddr = &pci_bios_io_next;
                     }
                 } else {
+                    if ((val & PCI_BASE_ADDRESS_MEM_TYPE_MASK) ==
+                         PCI_BASE_ADDRESS_MEM_TYPE_64 &&
+                        (val & mask) == PCI_BASE_ADDRESS_MEM_MASK) {
+                        panic("64-bit BAR mappings larger than 4GB unsupported\n");
+                        i++; // 64-bit BAR
+                        continue;
+                    }
                     paddr = &pci_bios_mem_addr;
                 }
                 *paddr = ALIGN(*paddr, size);
@@ -138,6 +145,13 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
                     panic("PCI I/O address wrap-around\n");
                 if (pci_bios_mem_addr < BUILD_PCIMEM_START)
                     panic("PCI memory address wrap-around\n");
+
+                /* 64-bit BARs, we assume upper 4-bytes can be ignored, just clear it */
+                if ((val & PCI_BASE_ADDRESS_SPACE) == PCI_BASE_ADDRESS_SPACE_MEMORY &&
+                    (val & PCI_BASE_ADDRESS_MEM_TYPE_MASK) == PCI_BASE_ADDRESS_MEM_TYPE_64) {
+                    pci_config_writel(bdf, ofs + 4, 0);
+                    i++;  // 64-bit BAR
+                }
             }
         }
         break;
