@@ -76,6 +76,8 @@ static int pci_bios_init_device(u16 bdf, int irq_offset)
                 /* MPIC & MPIC2 */
                 pci_set_io_region_addr(bdf, 0, 0x80800000 + 0x00040000);
             }
+        } else {
+                goto default_map;
         }
         break;
     case 0xff00:
