@@ -23,6 +23,18 @@ pci_register_MCFG(u32 start, u32 size)
     mcfg_size = size;
 }
 
+u32
+pci_get_MCFG_base(void)
+{
+    return mcfg_start;
+}
+
+u32
+pci_get_MCFG_size(void)
+{
+    return mcfg_size;
+}
+
 static inline void *
 mcfg_addr(u16 bdf, u32 addr) 
 {
