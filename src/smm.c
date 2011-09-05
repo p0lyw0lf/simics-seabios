@@ -153,5 +153,7 @@ smm_init(void)
         return;
 
     dprintf(3, "init smm\n");
+    /* TODO-X58: SMM initialization. We don't really need SMM, so this is far
+       from urgent. */
     pci_find_init_device(smm_init_tbl, NULL);
 }
