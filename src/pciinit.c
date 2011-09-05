@@ -111,15 +111,6 @@ static void pci_set_io_region_addr(u16 bdf, int region_num, u32 addr)
     pci_config_writel(bdf, ofs, addr);
 }
 
-/* return the global irq number corresponding to a given device irq
-   pin. We could also use the bus number to have a more precise
-   mapping. */
-static int pci_slot_get_pirq(u16 bdf, int irq_num)
-{
-    int slot_addend = pci_bdf_to_dev(bdf) - 1;
-    return (irq_num + slot_addend) & 3;
-}
-
 /* PIIX3/PIIX4 PCI to ISA bridge */
 static void piix_isa_bridge_init(struct pci_device *pci, void *arg)
 {
@@ -273,8 +264,7 @@ static void pci_bios_init_device(struct pci_device *pci)
     /* map the interrupt */
     pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
     if (pin != 0) {
-        pin = pci_slot_get_pirq(bdf, pin - 1);
-        pic_irq = pci_irqs[pin];
+        pic_irq = pci_irqs[pin - 1];
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pic_irq);
     }
 
