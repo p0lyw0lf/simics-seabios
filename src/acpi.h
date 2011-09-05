@@ -79,7 +79,7 @@ struct fadt_descriptor_rev1
     u8  day_alrm;               /* Index to day-of-month alarm in RTC CMOS RAM */
     u8  mon_alrm;               /* Index to month-of-year alarm in RTC CMOS RAM */
     u8  century;                /* Index to century in RTC CMOS RAM */
-    u8  reserved4;              /* Reserved */
+    u8  ia32_boot_arch;         /* Architecture flags */
     u8  reserved4a;             /* Reserved */
     u8  reserved4b;             /* Reserved */
 #if 0
