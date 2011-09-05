@@ -354,4 +354,9 @@ menu "Simics"
         help
             If disabled, wait 10ms instead of relying on the CPU count
             stored in memory.
+    config VIRTUTECH_MODEL
+        bool "Select Virtutech machine model"
+        default n
+        help
+            Select Virtutech or QEMU machine model.
 endmenu
