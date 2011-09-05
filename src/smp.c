@@ -111,7 +111,7 @@ smp_probe(void)
     writel(APIC_ICR_LOW, 0x000C4600 | sipi_vector);
 
     // Wait for other CPUs to process the SIPI.
-    if (CONFIG_COREBOOT) {
+    if (CONFIG_COREBOOT || !CONFIG_USE_CMOS_BIOS_SMP_COUNT) {
         msleep(10);
     } else {
         u8 cmos_smp_count = inb_cmos(CMOS_BIOS_SMP_COUNT);
