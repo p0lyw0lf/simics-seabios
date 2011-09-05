@@ -249,22 +249,20 @@ static void pci_bios_init_device(struct pci_device *pci)
             , pci->vendor, pci->device);
     pci_init_device(pci_class_tbl, pci, NULL);
 
-    int class = pci_config_readw(bdf, PCI_CLASS_DEVICE);
     /* enable memory mappings */
-    if (class != PCI_CLASS_BRIDGE_PCI) {
-            /* TODO-X58: We need to handle PCI-to-PCI bridges in a special
-               way. This should be done similarly to the PCI-to-PCI
-               initialization code in the Virtutech BIOS (search for 'Header
-               type 1. PCI-to-PCI bridge' in rombios.c). This workaround will
-               work as long as all PCI buses expect 0 (the top-level bus in the
-               northbridge) are empty. */
-            pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO
-                             | PCI_COMMAND_MEMORY);
-    }
+    pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+
     /* map the interrupt */
     pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
     if (pin != 0) {
-        pic_irq = pci_irqs[pin - 1];
+        int irq = pin - 1;
+
+        // Rotate INTx lines as defined in the PCI-to-PCI bridge standard
+        if (pci_bdf_to_bus(bdf) > 0)
+                irq += pci_bdf_to_dev(bdf) & 0x3;
+        irq &= 3;
+
+        pic_irq = pci_irqs[irq];
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pic_irq);
     }
 
