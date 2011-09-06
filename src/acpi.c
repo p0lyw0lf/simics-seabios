@@ -197,6 +197,17 @@ struct srat_memory_affinity
     u32    reserved3[2];
 } PACKED;
 
+#define MCFG_SIGNATURE 0x4746434d
+struct mcfg_descriptor {
+    ACPI_TABLE_HEADER_DEF
+    u64 reserved1;
+    u64 base;
+    u16 pci_seg;
+    u8 start_bus;
+    u8 end_bus;
+    u32 reserved2;
+} PACKED;
+
 #include "acpi-dsdt.hex"
 
 static void
@@ -662,6 +673,24 @@ static const struct pci_device_id acpi_find_tbl[] = {
     PCI_DEVICE_END,
 };
 
+static void *
+build_mcfg(void)
+{
+    u64 base = pci_get_MCFG_base();
+    if (base == 0)
+        return NULL;
+
+    int mcfg_size = sizeof(struct mcfg_descriptor);
+    struct mcfg_descriptor *mcfg = malloc_high(mcfg_size);    
+    memset(mcfg, 0, mcfg_size);
+    mcfg->base = base;
+    mcfg->pci_seg = 0;
+    mcfg->start_bus = 0;
+    mcfg->end_bus = ((pci_get_MCFG_size() - 1) >> 20) & 0xff;
+    build_header((void*)mcfg, MCFG_SIGNATURE, mcfg_size, 1);
+    return mcfg;
+}
+
 struct rsdp_descriptor *RsdpAddr;
 
 #define MAX_ACPI_TABLES 20
@@ -694,6 +723,9 @@ acpi_bios_init(void)
     ACPI_INIT_TABLE(build_madt());
     ACPI_INIT_TABLE(build_hpet());
     ACPI_INIT_TABLE(build_srat());
+    void *mcfg = build_mcfg();
+    if (mcfg)
+        ACPI_INIT_TABLE(mcfg);
 
     u16 i, external_tables = qemu_cfg_acpi_additional_tables();
 
