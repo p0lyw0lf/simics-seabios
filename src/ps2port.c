@@ -250,11 +250,13 @@ __ps2_command(int aux, int command, u8 *param)
         if (ret < 0)
             goto fail;
         param[0] = ret;
-        ret = ps2_recvbyte(aux, 0, 100);
-        if (ret < 0)
-            // Some devices only respond with one byte on reset.
-            ret = 0;
-        param[1] = ret;
+        if (CONFIG_KBD_RESET_HAS_2ND_BYTE) {
+            ret = ps2_recvbyte(aux, 0, 100);
+            if (ret < 0)
+                // Some devices only respond with one byte on reset.
+                ret = 0;
+            param[1] = ret;
+        }
     } else if (command == ATKBD_CMD_GETID) {
         // Getid is special wrt bytes received.
 

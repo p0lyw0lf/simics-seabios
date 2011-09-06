@@ -446,4 +446,9 @@ menu "Simics"
         default n
         help
             Select Virtutech or QEMU machine model.
+    config KBD_RESET_HAS_2ND_BYTE
+        bool "Keyboard reset has second byte"
+        default y
+        help
+            Marked if keyboard reset has second byte (default).
 endmenu
