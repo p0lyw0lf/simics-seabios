@@ -185,6 +185,7 @@ ps2_recvbyte(int aux, int needack, int timeout)
             return -1;
         }
         yield();
+        asm volatile("pause");
     }
 }
 
