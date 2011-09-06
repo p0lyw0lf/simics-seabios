@@ -44,4 +44,6 @@ int pci_next(int bdf, int bus);
 int pci_probe_host(void);
 void pci_reboot(void);
 
+void pci_register_MCFG(u32 start, u32 size);
+
 #endif // pci.h
