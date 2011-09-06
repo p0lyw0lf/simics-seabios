@@ -364,4 +364,9 @@ menu "Simics"
         default y
         help
             Marked if keyboard reset has second byte (default).
+    config MCFG
+        bool "MCFG support"
+	default y
+	help
+	    Core-i7 MCFG support.
 endmenu
