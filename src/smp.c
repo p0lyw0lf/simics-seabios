@@ -110,9 +110,17 @@ smp_probe(void)
     u32 sipi_vector = BUILD_AP_BOOT_ADDR >> 12;
     writel(APIC_ICR_LOW, 0x000C4600 | sipi_vector);
 
+    MaxCountCPUs = qemu_cfg_get_max_cpus();
+
     // Wait for other CPUs to process the SIPI.
     if (CONFIG_COREBOOT || !CONFIG_USE_CMOS_BIOS_SMP_COUNT) {
-        msleep(10);
+        /* Wait up to 10 ms, with early out */
+        int ms_count;
+        for (ms_count = 0; ms_count < 10000; ms_count++) {
+            if (MaxCountCPUs && CountCPUs == MaxCountCPUs)
+                break;
+            udelay(1);
+        }
     } else {
         u8 cmos_smp_count = inb_cmos(CMOS_BIOS_SMP_COUNT);
         while (cmos_smp_count + 1 != readl(&CountCPUs))
@@ -122,7 +130,6 @@ smp_probe(void)
     // Restore memory.
     *(u64*)BUILD_AP_BOOT_ADDR = old;
 
-    MaxCountCPUs = qemu_cfg_get_max_cpus();
     if (!MaxCountCPUs || MaxCountCPUs < CountCPUs)
         MaxCountCPUs = CountCPUs;
 
