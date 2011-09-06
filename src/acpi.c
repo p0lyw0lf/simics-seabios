@@ -355,7 +355,7 @@ build_madt(void)
         apic->type = APIC_PROCESSOR;
         apic->length = sizeof(*apic);
         apic->processor_id = i;
-        apic->local_apic_id = i;
+        apic->local_apic_id = qemu_cfg_get_apic_id(i);
         if (i < CountCPUs)
             apic->flags = cpu_to_le32(1);
         else
@@ -597,7 +597,7 @@ build_srat(void)
     for (i = 0; i < MaxCountCPUs; ++i) {
         core->type = SRAT_PROCESSOR;
         core->length = sizeof(*core);
-        core->local_apic_id = i;
+        core->local_apic_id = qemu_cfg_get_apic_id(i);
         curnode = *numadata++;
         core->proximity_lo = curnode;
         memset(core->proximity_hi, 0, 3);

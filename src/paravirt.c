@@ -305,6 +305,23 @@ u16 qemu_cfg_get_max_cpus(void)
     return cnt;
 }
 
+u16 qemu_cfg_get_apic_id(int cpu)
+{
+    u16 apic_id;
+
+    if (!qemu_cfg_present)
+        return cpu; /* assume 1:1 */
+
+    qemu_cfg_read_entry(&apic_id, QEMU_CFG_APIC_ID+cpu, sizeof(apic_id));
+
+    if (apic_id == 0)
+            /* Request not known by paravirt device. Also, assume that CPU 0
+               has ID 0. */
+            apic_id = cpu;
+
+    return apic_id;
+}
+
 static QemuCfgFile LastFile;
 
 static u32
