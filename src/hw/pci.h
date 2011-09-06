@@ -45,5 +45,7 @@ int pci_probe_host(void);
 void pci_reboot(void);
 
 void pci_register_MCFG(u32 start, u32 size);
+u32 pci_get_MCFG_base(void);
+u32 pci_get_MCFG_size(void);
 
 #endif // pci.h
