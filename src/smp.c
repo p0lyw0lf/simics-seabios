@@ -23,15 +23,19 @@ u32 smp_mtrr_count VAR16VISIBLE;
 void
 wrmsr_smp(u32 index, u64 val)
 {
+    unsigned i;
     wrmsr(index, val);
-    if (smp_mtrr_count >= ARRAY_SIZE(smp_mtrr)) {
-        warn_noalloc();
-        return;
-    }
-    smp_mtrr[smp_mtrr_count].ecx = index;
-    smp_mtrr[smp_mtrr_count].eax = val;
-    smp_mtrr[smp_mtrr_count].edx = val >> 32;
-    smp_mtrr_count++;
+    for (i = 0; i < smp_mtrr_count; i++)
+        if (smp_mtrr[i].ecx == index)
+            break;
+    if (i >= ARRAY_SIZE(smp_mtrr))
+        panic("smp_mtrr table overflow");
+    if (i == smp_mtrr_count)
+        smp_mtrr_count++;
+
+    smp_mtrr[i].ecx = index;
+    smp_mtrr[i].eax = val;
+    smp_mtrr[i].edx = val >> 32;
 }
 
 u32 CountCPUs VAR16VISIBLE;
