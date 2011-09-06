@@ -28,27 +28,13 @@ DefinitionBlock (
     Scope (\)
     {
         /* Debug Output */
-        OperationRegion (DBG, SystemIO, 0x0402, 0x01)
-        Field (DBG, ByteAcc, NoLock, Preserve)
+        OperationRegion (DBG, SystemIO, 0xb044, 0x04)
+        Field (DBG, DWordAcc, NoLock, Preserve)
         {
-            DBGB,   8,
-        }
-
-        /* Debug method - use this method to send output to the QEMU
-         * BIOS debug port.  This method handles strings, integers,
-         * and buffers.  For example: DBUG("abc") DBUG(0x123) */
-        Method(DBUG, 1) {
-            ToHexString(Arg0, Local0)
-            ToBuffer(Local0, Local0)
-            Subtract(SizeOf(Local0), 1, Local1)
-            Store(Zero, Local2)
-            While (LLess(Local2, Local1)) {
-                Store(DerefOf(Index(Local0, Local2)), DBGB)
-                Increment(Local2)
-            }
-            Store(0x0A, DBGB)
+            DBGL,   32,
         }
     }
+
 
     /* PCI Bus definition */
     Scope(\_SB) {
@@ -56,58 +42,194 @@ DefinitionBlock (
             Name (_HID, EisaId ("PNP0A03"))
             Name (_ADR, 0x00)
             Name (_UID, 1)
-            Name(_PRT, Package() {
-                /* PCI IRQ routing table, example from ACPI 2.0a specification,
-                   section 6.2.8.1 */
-                /* Note: we provide the same info as the PCI routing
-                   table of the Bochs BIOS */
-#define prt_slot(nr, lnk0, lnk1, lnk2, lnk3) \
-       Package() { nr##ffff, 0, lnk0, 0 }, \
-       Package() { nr##ffff, 1, lnk1, 0 }, \
-       Package() { nr##ffff, 2, lnk2, 0 }, \
-       Package() { nr##ffff, 3, lnk3, 0 }
+			Name(_PRT, Package() {
+				// Slot 1
+				Package() {0x0001FFFF, 0, 0, 0xa},
+				Package() {0x0001FFFF, 1, 0, 0xa},
+				Package() {0x0001FFFF, 2, 0, 0xb},
+				Package() {0x0001FFFF, 3, 0, 0xb},
 
-#define prt_slot0(nr) prt_slot(nr, LNKD, LNKA, LNKB, LNKC)
-#define prt_slot1(nr) prt_slot(nr, LNKA, LNKB, LNKC, LNKD)
-#define prt_slot2(nr) prt_slot(nr, LNKB, LNKC, LNKD, LNKA)
-#define prt_slot3(nr) prt_slot(nr, LNKC, LNKD, LNKA, LNKB)
-               prt_slot0(0x0000),
-               /* Device 1 is power mgmt device, and can only use irq 9 */
-               Package() { 0x0001ffff, 0, LNKS, 0 },
-               Package() { 0x0001ffff, 1, LNKB, 0 },
-               Package() { 0x0001ffff, 2, LNKC, 0 },
-               Package() { 0x0001ffff, 3, LNKD, 0 },
-               prt_slot2(0x0002),
-               prt_slot3(0x0003),
-               prt_slot0(0x0004),
-               prt_slot1(0x0005),
-               prt_slot2(0x0006),
-               prt_slot3(0x0007),
-               prt_slot0(0x0008),
-               prt_slot1(0x0009),
-               prt_slot2(0x000a),
-               prt_slot3(0x000b),
-               prt_slot0(0x000c),
-               prt_slot1(0x000d),
-               prt_slot2(0x000e),
-               prt_slot3(0x000f),
-               prt_slot0(0x0010),
-               prt_slot1(0x0011),
-               prt_slot2(0x0012),
-               prt_slot3(0x0013),
-               prt_slot0(0x0014),
-               prt_slot1(0x0015),
-               prt_slot2(0x0016),
-               prt_slot3(0x0017),
-               prt_slot0(0x0018),
-               prt_slot1(0x0019),
-               prt_slot2(0x001a),
-               prt_slot3(0x001b),
-               prt_slot0(0x001c),
-               prt_slot1(0x001d),
-               prt_slot2(0x001e),
-               prt_slot3(0x001f),
-            })
+				// Slot 2
+				Package() {0x0002FFFF, 0, 0, 0xa},
+				Package() {0x0002FFFF, 1, 0, 0xa},
+				Package() {0x0002FFFF, 2, 0, 0xb},
+				Package() {0x0002FFFF, 3, 0, 0xb},
+
+				// Slot 3
+				Package() {0x0003FFFF, 0, 0, 0xa},
+				Package() {0x0003FFFF, 1, 0, 0xa},
+				Package() {0x0003FFFF, 2, 0, 0xb},
+				Package() {0x0003FFFF, 3, 0, 0xb},
+
+				// Slot 4
+				Package() {0x0004FFFF, 0, 0, 0xa},
+				Package() {0x0004FFFF, 1, 0, 0xa},
+				Package() {0x0004FFFF, 2, 0, 0xb},
+				Package() {0x0004FFFF, 3, 0, 0xb},
+
+				// Slot 5
+				Package() {0x0005FFFF, 0, 0, 0xa},
+				Package() {0x0005FFFF, 1, 0, 0xa},
+				Package() {0x0005FFFF, 2, 0, 0xb},
+				Package() {0x0005FFFF, 3, 0, 0xb},
+
+				// Slot 6
+				Package() {0x0006FFFF, 0, 0, 0xa},
+				Package() {0x0006FFFF, 1, 0, 0xa},
+				Package() {0x0006FFFF, 2, 0, 0xb},
+				Package() {0x0006FFFF, 3, 0, 0xb},
+
+				// Slot 7
+				Package() {0x0007FFFF, 0, 0, 0xa},
+				Package() {0x0007FFFF, 1, 0, 0xa},
+				Package() {0x0007FFFF, 2, 0, 0xb},
+				Package() {0x0007FFFF, 3, 0, 0xb},
+
+				// Slot 8
+				Package() {0x0008FFFF, 0, 0, 0xa},
+				Package() {0x0008FFFF, 1, 0, 0xa},
+				Package() {0x0008FFFF, 2, 0, 0xb},
+				Package() {0x0008FFFF, 3, 0, 0xb},
+
+				// Slot 9
+				Package() {0x0009FFFF, 0, 0, 0xa},
+				Package() {0x0009FFFF, 1, 0, 0xa},
+				Package() {0x0009FFFF, 2, 0, 0xb},
+				Package() {0x0009FFFF, 3, 0, 0xb},
+
+				// Slot 10
+				Package() {0x000AFFFF, 0, 0, 0xa},
+				Package() {0x000AFFFF, 1, 0, 0xa},
+				Package() {0x000AFFFF, 2, 0, 0xb},
+				Package() {0x000AFFFF, 3, 0, 0xb},
+
+				// Slot 11
+				Package() {0x000BFFFF, 0, 0, 0xa},
+				Package() {0x000BFFFF, 1, 0, 0xa},
+				Package() {0x000BFFFF, 2, 0, 0xb},
+				Package() {0x000BFFFF, 3, 0, 0xb},
+
+				// Slot 12
+				Package() {0x000CFFFF, 0, 0, 0xa},
+				Package() {0x000CFFFF, 1, 0, 0xa},
+				Package() {0x000CFFFF, 2, 0, 0xb},
+				Package() {0x000CFFFF, 3, 0, 0xb},
+
+				// Slot 13
+				Package() {0x000DFFFF, 0, 0, 0xa},
+				Package() {0x000DFFFF, 1, 0, 0xa},
+				Package() {0x000DFFFF, 2, 0, 0xb},
+				Package() {0x000DFFFF, 3, 0, 0xb},
+
+				// Slot 14
+				Package() {0x000EFFFF, 0, 0, 0xa},
+				Package() {0x000EFFFF, 1, 0, 0xa},
+				Package() {0x000EFFFF, 2, 0, 0xb},
+				Package() {0x000EFFFF, 3, 0, 0xb},
+
+				// Slot 15
+				Package() {0x000FFFFF, 0, 0, 0xa},
+				Package() {0x000FFFFF, 1, 0, 0xa},
+				Package() {0x000FFFFF, 2, 0, 0xb},
+				Package() {0x000FFFFF, 3, 0, 0xb},
+
+				// Slot 16
+				Package() {0x0010FFFF, 0, 0, 0xa},
+				Package() {0x0010FFFF, 1, 0, 0xa},
+				Package() {0x0010FFFF, 2, 0, 0xb},
+				Package() {0x0010FFFF, 3, 0, 0xb},
+
+				// Slot 17
+				Package() {0x0011FFFF, 0, 0, 0xa},
+				Package() {0x0011FFFF, 1, 0, 0xa},
+				Package() {0x0011FFFF, 2, 0, 0xb},
+				Package() {0x0011FFFF, 3, 0, 0xb},
+
+				// Slot 18
+				Package() {0x0012FFFF, 0, 0, 0xa},
+				Package() {0x0012FFFF, 1, 0, 0xa},
+				Package() {0x0012FFFF, 2, 0, 0xb},
+				Package() {0x0012FFFF, 3, 0, 0xb},
+
+				// Slot 19
+				Package() {0x0013FFFF, 0, 0, 0xa},
+				Package() {0x0013FFFF, 1, 0, 0xa},
+				Package() {0x0013FFFF, 2, 0, 0xb},
+				Package() {0x0013FFFF, 3, 0, 0xb},
+
+				// Slot 20
+				Package() {0x0014FFFF, 0, 0, 0xa},
+				Package() {0x0014FFFF, 1, 0, 0xa},
+				Package() {0x0014FFFF, 2, 0, 0xb},
+				Package() {0x0014FFFF, 3, 0, 0xb},
+
+				// Slot 21
+				Package() {0x0015FFFF, 0, 0, 0xa},
+				Package() {0x0015FFFF, 1, 0, 0xa},
+				Package() {0x0015FFFF, 2, 0, 0xb},
+				Package() {0x0015FFFF, 3, 0, 0xb},
+
+				// Slot 22
+				Package() {0x0016FFFF, 0, 0, 0xa},
+				Package() {0x0016FFFF, 1, 0, 0xa},
+				Package() {0x0016FFFF, 2, 0, 0xb},
+				Package() {0x0016FFFF, 3, 0, 0xb},
+
+				// Slot 23
+				Package() {0x0017FFFF, 0, 0, 0xa},
+				Package() {0x0017FFFF, 1, 0, 0xa},
+				Package() {0x0017FFFF, 2, 0, 0xb},
+				Package() {0x0017FFFF, 3, 0, 0xb},
+
+				// Slot 24
+				Package() {0x0018FFFF, 0, 0, 0xa},
+				Package() {0x0018FFFF, 1, 0, 0xa},
+				Package() {0x0018FFFF, 2, 0, 0xb},
+				Package() {0x0018FFFF, 3, 0, 0xb},
+
+				// Slot 25
+				Package() {0x0019FFFF, 0, 0, 0xa},
+				Package() {0x0019FFFF, 1, 0, 0xa},
+				Package() {0x0019FFFF, 2, 0, 0xb},
+				Package() {0x0019FFFF, 3, 0, 0xb},
+
+				// Slot 26
+				Package() {0x001AFFFF, 0, 0, 0xa},
+				Package() {0x001AFFFF, 1, 0, 0xa},
+				Package() {0x001AFFFF, 2, 0, 0xb},
+				Package() {0x001AFFFF, 3, 0, 0xb},
+
+				// Slot 27
+				Package() {0x001BFFFF, 0, 0, 0xa},
+				Package() {0x001BFFFF, 1, 0, 0xa},
+				Package() {0x001BFFFF, 2, 0, 0xb},
+				Package() {0x001BFFFF, 3, 0, 0xb},
+
+				// Slot 28
+				Package() {0x001CFFFF, 0, 0, 0xa},
+				Package() {0x001CFFFF, 1, 0, 0xa},
+				Package() {0x001CFFFF, 2, 0, 0xb},
+				Package() {0x001CFFFF, 3, 0, 0xb},
+
+				// Slot 29
+				Package() {0x001DFFFF, 0, 0, 0xa},
+				Package() {0x001DFFFF, 1, 0, 0xa},
+				Package() {0x001DFFFF, 2, 0, 0xb},
+				Package() {0x001DFFFF, 3, 0, 0xb},
+
+				// Slot 30
+				Package() {0x001EFFFF, 0, 0, 0xa},
+				Package() {0x001EFFFF, 1, 0, 0xa},
+				Package() {0x001EFFFF, 2, 0, 0xb},
+				Package() {0x001EFFFF, 3, 0, 0xb},
+
+				// Slot 31
+				Package() {0x001FFFFF, 0, 0, 0xa},
+				Package() {0x001FFFFF, 1, 0, 0xa},
+				Package() {0x001FFFFF, 2, 0, 0xb},
+				Package() {0x001FFFFF, 3, 0, 0xb}
+			}
+			)
 
             OperationRegion(PCST, SystemIO, 0xae00, 0x08)
             Field (PCST, DWordAcc, NoLock, WriteAsZeros)
@@ -120,12 +242,6 @@ DefinitionBlock (
             Field (SEJ, DWordAcc, NoLock, WriteAsZeros)
             {
                 B0EJ, 32,
-            }
-
-            OperationRegion(RMVC, SystemIO, 0xae0c, 0x04)
-            Field(RMVC, DWordAcc, NoLock, WriteAsZeros)
-            {
-                PCRM, 32,
             }
 
 #define hotplug_slot(name, nr) \
@@ -239,10 +355,6 @@ DefinitionBlock (
     Scope(\_SB.PCI0) {
         Device (VGA) {
                  Name (_ADR, 0x00020000)
-                 OperationRegion(PCIC, PCI_Config, Zero, 0x4)
-                 Field(PCIC, DWordAcc, NoLock, Preserve) {
-                         VEND, 32
-                 }
                  Method (_S1D, 0, NotSerialized)
                  {
                          Return (0x00)
@@ -253,20 +365,13 @@ DefinitionBlock (
                  }
                  Method (_S3D, 0, NotSerialized)
                  {
-                         If (LEqual(VEND, 0x1001b36)) {
-                                 Return (0x03)           // QXL
-                         } Else {
-                                 Return (0x00)
-                         }
+                         Return (0x00)
                  }
-                 Method(_RMV) { Return (0x00) }
         }
 
 	/* PIIX3 ISA bridge */
         Device (ISA) {
             Name (_ADR, 0x00010000)
-            Method(_RMV) { Return (0x00) }
-
 
             /* PIIX PCI to ISA irq remapping */
             OperationRegion (P40C, PCI_Config, 0x60, 0x04)
@@ -459,49 +564,6 @@ DefinitionBlock (
 		DRSJ, 32
 	    }
 	}
-
-#define gen_pci_device(name, nr)                                \
-        Device(SL##name) {                                      \
-            Name (_ADR, nr##0000)                               \
-            Method (_RMV) {                                     \
-                If (And(\_SB.PCI0.PCRM, ShiftLeft(1, nr))) {    \
-                    Return (0x1)                                \
-                }                                               \
-                Return (0x0)                                    \
-            }                                                   \
-            Name (_SUN, name)                                   \
-        }
-
-        /* VGA (slot 1) and ISA bus (slot 2) defined above */
-	gen_pci_device(3, 0x0003)
-	gen_pci_device(4, 0x0004)
-	gen_pci_device(5, 0x0005)
-	gen_pci_device(6, 0x0006)
-	gen_pci_device(7, 0x0007)
-	gen_pci_device(8, 0x0008)
-	gen_pci_device(9, 0x0009)
-	gen_pci_device(10, 0x000a)
-	gen_pci_device(11, 0x000b)
-	gen_pci_device(12, 0x000c)
-	gen_pci_device(13, 0x000d)
-	gen_pci_device(14, 0x000e)
-	gen_pci_device(15, 0x000f)
-	gen_pci_device(16, 0x0010)
-	gen_pci_device(17, 0x0011)
-	gen_pci_device(18, 0x0012)
-	gen_pci_device(19, 0x0013)
-	gen_pci_device(20, 0x0014)
-	gen_pci_device(21, 0x0015)
-	gen_pci_device(22, 0x0016)
-	gen_pci_device(23, 0x0017)
-	gen_pci_device(24, 0x0018)
-	gen_pci_device(25, 0x0019)
-	gen_pci_device(26, 0x001a)
-	gen_pci_device(27, 0x001b)
-	gen_pci_device(28, 0x001c)
-	gen_pci_device(29, 0x001d)
-	gen_pci_device(30, 0x001e)
-	gen_pci_device(31, 0x001f)
     }
 
     /* PCI IRQs */
@@ -513,227 +575,6 @@ DefinitionBlock (
              PRQ2,   8,
              PRQ3,   8
          }
-
-        Device(LNKA){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 1)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ0, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ0, 0x80, PRQ0)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ0, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ0)
-                }
-        }
-        Device(LNKB){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 2)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ1, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ1, 0x80, PRQ1)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ1, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ1)
-                }
-        }
-        Device(LNKC){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 3)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ2, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ2, 0x80, PRQ2)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ2, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ2)
-                }
-        }
-        Device(LNKD){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 4)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 5, 10, 11 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ3, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ3, 0x80, PRQ3)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {1}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ3, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-                Method (_SRS, 1, NotSerialized)
-                {
-                    CreateDWordField (Arg0, 0x05, TMP)
-                    Store (TMP, PRQ3)
-                }
-        }
-        Device(LNKS){
-                Name(_HID, EISAID("PNP0C0F"))     // PCI interrupt link
-                Name(_UID, 5)
-                Name(_PRS, ResourceTemplate(){
-                    Interrupt (, Level, ActiveHigh, Shared)
-                        { 9 }
-                })
-                Method (_STA, 0, NotSerialized)
-                {
-                    Store (0x0B, Local0)
-                    If (And (0x80, PRQ0, Local1))
-                    {
-                         Store (0x09, Local0)
-                    }
-                    Return (Local0)
-                }
-                Method (_DIS, 0, NotSerialized)
-                {
-                    Or (PRQ0, 0x80, PRQ0)
-                }
-                Method (_CRS, 0, NotSerialized)
-                {
-                    Name (PRR0, ResourceTemplate ()
-                    {
-                        Interrupt (, Level, ActiveHigh, Shared)
-                            {9}
-                    })
-                    CreateDWordField (PRR0, 0x05, TMP)
-                    Store (PRQ0, Local0)
-                    If (LLess (Local0, 0x80))
-                    {
-                        Store (Local0, TMP)
-                    }
-                    Else
-                    {
-                        Store (Zero, TMP)
-                    }
-                    Return (PRR0)
-                }
-        }
     }
 
     /*
@@ -761,78 +602,6 @@ DefinitionBlock (
         Zero,  /* reserved */
         Zero   /* reserved */
     })
-
-    /* CPU hotplug */
-    Scope(\_SB) {
-        /* Objects filled in by run-time generated SSDT */
-        External(NTFY, MethodObj)
-        External(CPON, PkgObj)
-
-        /* Methods called by run-time generated SSDT Processor objects */
-        Method (CPMA, 1, NotSerialized) {
-            // _MAT method - create an madt apic buffer
-            // Local0 = CPON flag for this cpu
-            Store(DerefOf(Index(CPON, Arg0)), Local0)
-            // Local1 = Buffer (in madt apic form) to return
-            Store(Buffer(8) {0x00, 0x08, 0x00, 0x00, 0x00, 0, 0, 0}, Local1)
-            // Update the processor id, lapic id, and enable/disable status
-            Store(Arg0, Index(Local1, 2))
-            Store(Arg0, Index(Local1, 3))
-            Store(Local0, Index(Local1, 4))
-            Return (Local1)
-        }
-        Method (CPST, 1, NotSerialized) {
-            // _STA method - return ON status of cpu
-            // Local0 = CPON flag for this cpu
-            Store(DerefOf(Index(CPON, Arg0)), Local0)
-            If (Local0) { Return(0xF) } Else { Return(0x0) }
-        }
-        Method (CPEJ, 2, NotSerialized) {
-            // _EJ0 method - eject callback
-            Sleep(200)
-        }
-
-        /* CPU hotplug notify method */
-        OperationRegion(PRST, SystemIO, 0xaf00, 32)
-        Field (PRST, ByteAcc, NoLock, Preserve)
-        {
-            PRS, 256
-        }
-        Method(PRSC, 0) {
-            // Local5 = active cpu bitmap
-            Store (PRS, Local5)
-            // Local2 = last read byte from bitmap
-            Store (Zero, Local2)
-            // Local0 = cpuid iterator
-            Store (Zero, Local0)
-            While (LLess(Local0, SizeOf(CPON))) {
-                // Local1 = CPON flag for this cpu
-                Store(DerefOf(Index(CPON, Local0)), Local1)
-                If (And(Local0, 0x07)) {
-                    // Shift down previously read bitmap byte
-                    ShiftRight(Local2, 1, Local2)
-                } Else {
-                    // Read next byte from cpu bitmap
-                    Store(DerefOf(Index(Local5, ShiftRight(Local0, 3))), Local2)
-                }
-                // Local3 = active state for this cpu
-                Store(And(Local2, 1), Local3)
-
-                If (LNotEqual(Local1, Local3)) {
-                    // State change - update CPON with new state
-                    Store(Local3, Index(CPON, Local0))
-                    // Do CPU notify
-                    If (LEqual(Local3, 1)) {
-                        NTFY(Local0, 1)
-                    } Else {
-                        NTFY(Local0, 3)
-                    }
-                }
-                Increment(Local0)
-            }
-            Return(One)
-        }
-    }
 
     Scope (\_GPE)
     {
@@ -887,8 +656,7 @@ DefinitionBlock (
 
         }
         Method(_L02) {
-            // CPU hotplug event
-            Return(\_SB.PRSC())
+            Return(0x01)
         }
         Method(_L03) {
             Return(0x01)
