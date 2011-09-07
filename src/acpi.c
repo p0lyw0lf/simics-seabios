@@ -721,7 +721,8 @@ acpi_bios_init(void)
     ACPI_INIT_TABLE(build_fadt(pci));
     ACPI_INIT_TABLE(build_ssdt());
     ACPI_INIT_TABLE(build_madt());
-    ACPI_INIT_TABLE(build_hpet());
+    if (CONFIG_ACPI_HPET)
+            ACPI_INIT_TABLE(build_hpet());
     ACPI_INIT_TABLE(build_srat());
     void *mcfg = build_mcfg();
     if (mcfg)

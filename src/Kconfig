@@ -369,4 +369,9 @@ menu "Simics"
 	default y
 	help
 	    Core-i7 MCFG support.
+    config ACPI_HPET
+        bool "Add AHCI HPET Table"
+        default y
+        help
+            The HPET table is only added to the AHCI tables if this is set.
 endmenu
