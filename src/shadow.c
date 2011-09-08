@@ -11,11 +11,50 @@
 #include "pci_ids.h" // PCI_VENDOR_ID_INTEL
 #include "pci_regs.h" // PCI_VENDOR_ID
 #include "xen.h" // usingXen
+#include "ioport.h" // outb
 
 // On the emulators, the bios at 0xf0000 is also at 0xffff0000
 #define BIOS_SRC_OFFSET 0xfff00000
 
 #define I440FX_PAM0     0x59
+
+#if CONFIG_VIRTUTECH_PC_SHADOW
+
+#define Read_Only 1
+#define Write_Only 2
+#define Read_Write 3
+
+static void modify_shadow(unsigned long start, unsigned long len, int mode)
+{
+    int start_loc = ((int)(start >> 10) - 640) >> 1;
+    int len_remaining = len >> 11;
+    int i;
+    for (i = 0; i < len_remaining; i++) {
+        outb(start_loc + i, 0xfff4);
+        if (mode == Read_Only) {
+            outb(1, 0xfff5);
+        } else if (mode == Read_Write) {
+            outb(3, 0xfff5);
+        } else if (mode == Write_Only) {
+            outb(2, 0xfff5);
+        } else {
+            outb(0, 0xfff5);
+        }
+    }
+}
+
+static void
+__copy_bios(void)
+{
+    // Copy bios.
+//        void *mem = (void*)(BUILD_ROM_START + i * 32*1024);
+        memcpy((void*)BUILD_BIOS_ADDR,
+               (void*)(BIOS_SRC_OFFSET + BUILD_BIOS_ADDR), BUILD_BIOS_SIZE);
+
+//    memcpy((void*)BUILD_BIOS_ADDR, (void*)BIOS_SRC_ADDR, BUILD_BIOS_SIZE);
+}
+
+#else
 
 // Enable shadowing and copy bios.
 static void
@@ -106,6 +145,8 @@ static const struct pci_device_id dram_controller_make_readonly_tbl[] = {
     PCI_DEVICE_END
 };
 
+#endif // CONFIG_VIRTUTECH_PC_SHADOW
+
 // Make the 0xc0000-0x100000 area read/writable.
 void
 make_bios_writable(void)
@@ -114,6 +155,21 @@ make_bios_writable(void)
         return;
 
     dprintf(3, "enabling shadow ram\n");
+
+#if CONFIG_VIRTUTECH_PC_SHADOW
+    /* Read (and execute) from PCI, write to RAM */
+    modify_shadow(0xf0000, 0x10000, Write_Only);
+
+    /* Run the copy from the high address to avoid simulator flushes after each
+       write (the flushes ruin performance) */
+//    u32 pos = (u32)__copy_bios - BUILD_BIOS_ADDR + BIOS_SRC_ADDR;
+    u32 pos = (u32)__copy_bios + BIOS_SRC_OFFSET;
+    void (*func)(void) = (void*)pos;
+    func();
+
+    /* Keep BIOS read/write */
+    modify_shadow(0xf0000, 0x10000, Read_Write);
+#else
 
     // At this point, statically allocated variables can't be written,
     // so do this search manually.
@@ -128,6 +184,7 @@ make_bios_writable(void)
         }
     }
     dprintf(1, "Unable to unlock ram - bridge not found\n");
+#endif
 }
 
 // Make the BIOS code segment area (0xf0000) read-only.
@@ -138,10 +195,14 @@ make_bios_readonly(void)
         return;
 
     dprintf(3, "locking shadow ram\n");
+#if CONFIG_VIRTUTECH_PC_SHADOW
+    modify_shadow(0xf0000, 0x10000, Read_Only);
+#else
     struct pci_device *pci = pci_find_init_device(
         dram_controller_make_readonly_tbl, NULL);
     if (!pci)
         dprintf(1, "Unable to lock ram - bridge not found\n");
+#endif
 }
 
 void
