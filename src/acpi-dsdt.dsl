@@ -43,6 +43,17 @@ DefinitionBlock (
 
     /* PCI Bus definition */
     Scope(\_SB) {
+        /* motherboard resource */
+        Device(MBRS) {
+            Name (_HID, EisaId ("PNP0C02"))
+            Name (_CRS, ResourceTemplate() {
+                /* MCFG */
+                Memory32Fixed (ReadWrite, 0xE0000000, 0x10000000)
+                /* hostfs */
+                Memory32Fixed (ReadWrite, 0xFFE81000, 0x1000)
+            })
+        }
+
         Device(PCI0) {
             Name (_HID, EisaId ("PNP0A03"))
             Name (_ADR, 0x00)
