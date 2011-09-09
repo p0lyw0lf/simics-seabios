@@ -548,7 +548,13 @@ build_hpet(void)
     /* Note timer_block_id value must be kept in sync with value advertised by
      * emulated hpet
      */
-    hpet->timer_block_id = cpu_to_le32(0x8086a201);
+    u32 val = (0x8086 << 16)
+            | 1 * (1 << 15)     /* legacy IRQ routing */
+            | 1 * (1 << 13)     /* COUNT_SIZE_CAP counter size (64 bit) */
+            | 7 << 8            /* index of last counter (8 counters) */
+            | 0x01;             /* rev */
+    
+    hpet->timer_block_id = cpu_to_le32(val);
     hpet->addr.address = cpu_to_le32(BUILD_HPET_ADDRESS);
     build_header((void*)hpet, HPET_SIGNATURE, sizeof(*hpet), 1);
 
