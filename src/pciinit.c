@@ -49,6 +49,9 @@ static void pci_bios_init_device_in_bus(int bus);
 static void pci_bios_check_device_in_bus(int bus);
 static void pci_bios_init_bus_bases(struct pci_bus *bus);
 static void pci_bios_map_device_in_bus(int bus);
+static u32 pci_bios_bus_get_addr(struct pci_bus *bus, int type, u32 size);
+static void pci_bios_bus_reserve(struct pci_bus *bus, int type, u32 size);
+
 
 static int pci_size_to_index(u32 size, enum pci_region_type type)
 {
@@ -111,6 +114,20 @@ static void pci_set_io_region_addr(u16 bdf, int region_num, u32 addr)
     pci_config_writel(bdf, ofs, addr);
 }
 
+static void ich10_lpc_rcba(struct pci_device *pci, void *arg)
+{
+        struct pci_bus *bus = &busses[pci->rootbus];
+        u16 bdf = pci->bdf;
+        u32 rcba;
+        int type = PCI_REGION_TYPE_PREFMEM;
+        pci_bios_bus_reserve(bus, type, 0x4000);
+        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
+        rcba = bus->r[type].base;
+        pci_config_writel(bdf, 0xf0 /* RCBA */, rcba | 0x1);
+        dprintf(1, "Mapping RCBA at 0x%x and enabling HPET\n", (u32)rcba);
+        pci_writel(rcba + 0x3404, 0x80);
+}
+
 /* PIIX3/PIIX4 PCI to ISA bridge */
 static void piix_isa_bridge_init(struct pci_device *pci, void *arg)
 {
@@ -129,6 +146,13 @@ static void piix_isa_bridge_init(struct pci_device *pci, void *arg)
     outb(elcr[0], 0x4d0);
     outb(elcr[1], 0x4d1);
     dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n", elcr[0], elcr[1]);
+ }
+
+static void ich10_isa_brigde_init_and_hpet_enable(struct pci_device *pci,
+                                                  void *arg)
+{
+    piix_isa_bridge_init(pci, arg);
+    ich10_lpc_rcba(pci, arg);
 }
 
 static const struct pci_device_id pci_isa_bridge_tbl[] = {
@@ -140,7 +164,7 @@ static const struct pci_device_id pci_isa_bridge_tbl[] = {
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                piix_isa_bridge_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
-               piix_isa_bridge_init),
+               ich10_isa_brigde_init_and_hpet_enable),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2,
                piix_isa_bridge_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
