@@ -208,6 +208,64 @@ struct mcfg_descriptor {
     u32 reserved2;
 } PACKED;
 
+#define DMAR_SIGNATURE 0x52414D44
+struct dmar_descriptor_rev1 {
+     ACPI_TABLE_HEADER_DEF
+     u8 width;
+     u8 flags;
+     u8 reserved[10];
+} PACKED;
+
+/* Values for Type in DMAR sub-headers */
+#define DMAR_SUB_HEADER_DEF   \
+    u16 type;                 \
+    u16 length;
+
+#define DMAR_DRHD  0
+#define DMAR_RMRR  1
+#define DMAR_ATSR  2
+#define DMAR_RHSA  3
+
+struct dmar_drhd {
+    DMAR_SUB_HEADER_DEF
+    u8  flags;
+    u8  reserved;
+    u16 segment;
+    u64 address;
+} PACKED;
+
+struct dmar_device_scope {
+    DMAR_SUB_HEADER_DEF
+    u16 reserved;
+    u8  enum_id;
+    u8  bus_num;
+    // path 2 * N
+} PACKED;
+
+struct dmar_rmrr {
+    DMAR_SUB_HEADER_DEF
+    u16 reserved;
+    u16 segment;
+    u64 base_address;
+    u64 limit_address;
+} PACKED;
+
+struct dmar_atsr {
+    DMAR_SUB_HEADER_DEF
+    u8  flags;
+    u8  reserved;
+    u16 segment;
+} PACKED;
+
+struct dmar_rhsa {
+    DMAR_SUB_HEADER_DEF
+    u32 reserved;
+    u64 address;
+    u32 proximity_domain;
+} PACKED;
+
+
+
 #include "acpi-dsdt.hex"
 
 static void
@@ -705,6 +763,41 @@ build_mcfg(void)
     return mcfg;
 }
 
+static void *
+build_dmar(void)
+{
+    struct pci_device *pci;
+    pci = pci_find_device(0x8086, 0x342e);
+    if (pci == NULL) {
+        dprintf(1, "NO DMAR FOUND\n");
+        return NULL;
+    }
+    u16 bdf = pci->bdf;
+    u32 addr = pci_config_readl(bdf, 0x180);
+    if (!addr & 1) {
+            dprintf(1, "NO DMAR ADDR\n");
+        return NULL;
+    }
+    addr &= ~0xfff;
+
+    int dmar_size = sizeof(struct dmar_descriptor_rev1)
+        + sizeof(struct dmar_drhd);
+    struct dmar_descriptor_rev1 *dmar = malloc_high(dmar_size);
+    memset(dmar, 0, dmar_size);
+    dmar->width = 36;
+    dmar->flags = 1;
+
+    struct dmar_drhd *drhd = (void*)&dmar[1];
+    drhd->type = DMAR_DRHD;
+    drhd->length = sizeof(*drhd);
+    drhd->flags = 1; // INCLUDE_PCI_ALL
+    drhd->address = addr;
+
+    build_header((void*)dmar, DMAR_SIGNATURE, dmar_size, 1);
+    return dmar;
+}
+
+
 struct rsdp_descriptor *RsdpAddr;
 
 #define MAX_ACPI_TABLES 20
@@ -741,6 +834,9 @@ acpi_bios_init(void)
     void *mcfg = build_mcfg();
     if (mcfg)
         ACPI_INIT_TABLE(mcfg);
+    void *dmar = build_dmar();
+    if (dmar)
+        ACPI_INIT_TABLE(dmar);
 
     u16 i, external_tables = qemu_cfg_acpi_additional_tables();
 

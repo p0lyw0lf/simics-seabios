@@ -128,6 +128,19 @@ static void ich10_lpc_rcba(struct pci_device *pci, void *arg)
         pci_writel(rcba + 0x3404, 0x80);
 }
 
+static void ich10_map_vtbar(struct pci_device *pci, void *arg)
+{
+        struct pci_bus *bus = &busses[pci->rootbus];
+        u16 bdf = pci->bdf;
+        u32 addr;
+        int type = PCI_REGION_TYPE_PREFMEM;
+        pci_bios_bus_reserve(bus, type, 0x4000);
+        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
+        addr = bus->r[type].base;
+        pci_config_writel(bdf, 0x180, addr | 1);
+        dprintf(1, "Mapping VTBAR at 0x%x\n", addr);
+}
+
 /* PIIX3/PIIX4 PCI to ISA bridge */
 static void piix_isa_bridge_init(struct pci_device *pci, void *arg)
 {
@@ -169,6 +182,8 @@ static const struct pci_device_id pci_isa_bridge_tbl[] = {
                piix_isa_bridge_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
                piix_isa_bridge_init),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x342e, ich10_map_vtbar),
+
 
     PCI_DEVICE_END
 };
