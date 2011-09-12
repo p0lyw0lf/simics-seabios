@@ -174,6 +174,8 @@ static const struct pci_device_id pci_isa_bridge_tbl[] = {
                piix_isa_bridge_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_0,
                piix_isa_bridge_init),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_7,
+               piix_isa_bridge_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                piix_isa_bridge_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
@@ -280,6 +282,8 @@ static const struct pci_device_id pci_device_tbl[] = {
     /* PIIX4 Power Management device (for ACPI) */
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3,
                piix4_pm_init),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_7,
+               ich10_pm_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                ich10_pm_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
@@ -644,23 +648,44 @@ static void
 setup_pci_mcfg(void)
 {
 #ifdef CONFIG_MCFG
-    // setup MCFG for all cpu sockets
+    dprintf(3, "mcfg setup\n");
     int found = 0;
-    unsigned bus = 0xff;
+    u8  bus = 0xff;
+    u16 bdf;
+    u16 v;
+    u16 d;
+
+    // MCH5100-ICH9R
+    bdf = pci_to_bdf(0, 16, 0);
+    v = pci_config_readw(bdf, PCI_VENDOR_ID);
+    d = pci_config_readw(bdf, PCI_DEVICE_ID);
+    if (v == PCI_VENDOR_ID_INTEL && d == PCI_DEVICE_ID_INTEL_5100_16) {
+        pci_config_writel(bdf,0x64,BUILD_MCFG_START>>(28-12));
+        //writel((void *)0xFE616400, BUILD_MCFG_START>>(28-12));
+        // Configure MCFG but don't actually use it. It doesn't work well
+        // with non-existing devices
+        return;
+    }
+
+    // X58-ICH10
     for (bus = 0xff; bus > 0x10; bus--) {
-        u32 v = pci_config_readl((bus << 8) | 0x00, 0x0);
-        if (v != 0x2c418086)
-            continue;
-        v = pci_config_readl((bus << 8) | 0x01, 0x0);
-        if (v != 0x2c018086)
+        bdf = pci_to_bdf(bus, 0, 0);
+        v = pci_config_readw(bdf, PCI_VENDOR_ID);
+        d = pci_config_readw(bdf, PCI_DEVICE_ID);
+        if (v != PCI_VENDOR_ID_INTEL || d != PCI_DEVICE_ID_INTEL_QPI_NCR)
             continue;
 
+        bdf = pci_to_bdf(bus, 0, 1);
+        v = pci_config_readw(bdf, PCI_VENDOR_ID);
+        d = pci_config_readw(bdf, PCI_DEVICE_ID);
+        if (v != PCI_VENDOR_ID_INTEL || d != PCI_DEVICE_ID_INTEL_QPI_SAD)
+            continue;
+        
         u32 sbits = (BUILD_MCFG_SIZE == 0x10000000) ? 0 :
-            (BUILD_MCFG_SIZE == 0x8000000) ? 7 :
-            (BUILD_MCFG_SIZE == 0x4000000) ? 6 : 0;
-
-        pci_config_writel((bus << 8) | 0x01, 0x50,
-                          BUILD_MCFG_START | (sbits << 1) | 1);
+                    (BUILD_MCFG_SIZE == 0x08000000) ? 7 :
+                    (BUILD_MCFG_SIZE == 0x04000000) ? 6 : 0;
+        
+        pci_config_writel(bdf, 0x50, BUILD_MCFG_START | (sbits << 1) | 1);
         found = 1;
     }
     if (found)
