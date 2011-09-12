@@ -13,7 +13,7 @@
 #include "string.h" // memset
 #include "util.h" // udelay
 #include "x86.h" // outl
-
+#include "pci_ids.h"
 
 static u32 mcfg_start = 0;
 static u32 mcfg_size = 0;
@@ -198,6 +198,13 @@ pci_probe_devices(void)
             dev->parent = parent;
             dev->rootbus = rootbus;
             u32 vendev = pci_config_readl(bdf, PCI_VENDOR_ID);
+            if (vendev == (PCI_VENDOR_ID_INTEL
+                            | (PCI_DEVICE_ID_INTEL_ICH10_SATA << 16))
+                    && CONFIG_AHCI) {
+                dprintf(1, "INTEL ICH10 SATA, change to AHCI-mode\n");
+                pci_config_writew(bdf, 0x90, 0x60);
+                vendev = pci_config_readl(bdf, PCI_VENDOR_ID);
+            }
             dev->vendor = vendev & 0xffff;
             dev->device = vendev >> 16;
             u32 classrev = pci_config_readl(bdf, PCI_CLASS_REVISION);
