@@ -610,7 +610,7 @@ static int pci_bios_init_root_regions(u32 start, u32 end)
 {
     struct pci_bus *bus = &busses[0];
 
-    bus->r[PCI_REGION_TYPE_IO].base = 0xc000;
+    bus->r[PCI_REGION_TYPE_IO].base = 0x4000;
 
     if (bus->r[PCI_REGION_TYPE_MEM].sum < bus->r[PCI_REGION_TYPE_PREFMEM].sum) {
         bus->r[PCI_REGION_TYPE_MEM].base =
