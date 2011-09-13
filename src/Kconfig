@@ -353,18 +353,12 @@ menu "Simics"
 	default y
         help
 	    Make BIOS area read/writable in Simics
-
     config USE_CMOS_BIOS_SMP_COUNT
         bool "Use Cmos BIOS SMP Count"
         default y
         help
             If disabled, wait 10ms instead of relying on the CPU count
             stored in memory.
-    config VIRTUTECH_MODEL
-        bool "Select Virtutech machine model"
-        default n
-        help
-            Select Virtutech or QEMU machine model.
     config KBD_RESET_HAS_2ND_BYTE
         bool "Keyboard reset has second byte"
         default y
