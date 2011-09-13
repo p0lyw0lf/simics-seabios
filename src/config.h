@@ -103,7 +103,4 @@
 #define DEBUG_invalid 3
 #define DEBUG_thread 2
 
-/* Options for running on the Virtutech Simics x86-440bx machine model */
-#define VIRTUTECH_PC_SHADOW 0
-
 #endif // config.h
