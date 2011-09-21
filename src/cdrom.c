@@ -201,13 +201,8 @@ atapi_is_ready(struct disk_op_s *op)
             return -1;
         }
 
-        int ret = cdb_read_capacity(op, &info);
-        if (!ret)
-            // Success
-            break;
-
         struct cdbres_request_sense sense;
-        ret = cdb_get_sense(op, &sense);
+        int ret = cdb_get_sense(op, &sense);
         if (ret)
             // Error - retry.
             continue;
@@ -225,6 +220,11 @@ atapi_is_ready(struct disk_op_s *op)
             end = calc_future_tsc(30000);
             in_progress = 1;
         }
+
+        ret = cdb_read_capacity(op, &info);
+        if (!ret)
+            // Success
+            break;
     }
 
     u32 blksize = ntohl(info.blksize), sectors = ntohl(info.sectors);
