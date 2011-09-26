@@ -237,6 +237,8 @@ static const struct pci_device_id pci_class_tbl[] = {
     /* STORAGE IDE */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_SATA,
                      PCI_CLASS_STORAGE_IDE, ich10_sata_ide_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_SATAC,
+                     PCI_CLASS_STORAGE_IDE, ich10_sata_ide_init),
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
                      PCI_CLASS_STORAGE_IDE, piix_ide_init),
     PCI_DEVICE_CLASS(PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_STORAGE_IDE,
