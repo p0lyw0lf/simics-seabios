@@ -95,8 +95,20 @@ const u8 pci_irqs[4] = {
 
 static u32 pci_bar(u16 bdf, int region_num)
 {
-    if (region_num != PCI_ROM_SLOT) {
+    if ((region_num != PCI_ROM_SLOT) && (region_num != PCI_SPECIAL_SLOT)) {
         return PCI_BASE_ADDRESS_0 + region_num * 4;
+    }
+
+    if (region_num == PCI_SPECIAL_SLOT) {
+        u32 devid = pci_config_readw(bdf, PCI_DEVICE_ID);
+        if (devid == PCI_DEVICE_ID_INTEL_ICH10_1) {
+            dprintf(1, "Mapping LPC RCBA\n");
+            return 0xf0;
+        } else if (devid == 0x342e) {
+            dprintf(1, "Mapping VTBAR\n");
+            return 0x180;
+        } else
+            return 0;
     }
 
 #define PCI_HEADER_TYPE_MULTI_FUNCTION 0x80
@@ -111,34 +123,18 @@ static void pci_set_io_region_addr(u16 bdf, int region_num, u32 addr)
 
     ofs = pci_bar(bdf, region_num);
 
+    if (region_num == PCI_SPECIAL_SLOT)
+            addr |= 1; /* Enable BAR */
     pci_config_writel(bdf, ofs, addr);
 }
 
-static void ich10_lpc_rcba(struct pci_device *pci, void *arg)
+static void ich10_enable_hpet(struct pci_device *pci, void *arg)
 {
-        struct pci_bus *bus = &busses[pci->rootbus];
         u16 bdf = pci->bdf;
         u32 rcba;
-        int type = PCI_REGION_TYPE_PREFMEM;
-        pci_bios_bus_reserve(bus, type, 0x4000);
-        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
-        rcba = bus->r[type].base;
-        pci_config_writel(bdf, 0xf0 /* RCBA */, rcba | 0x1);
-        dprintf(1, "Mapping RCBA at 0x%x and enabling HPET\n", (u32)rcba);
+        rcba = pci_config_readl(bdf, 0xf0 /* RCBA */) & 0xfffffffe;
+        dprintf(1, "Enabling HPET\n");
         pci_writel(rcba + 0x3404, 0x80);
-}
-
-static void ich10_map_vtbar(struct pci_device *pci, void *arg)
-{
-        struct pci_bus *bus = &busses[pci->rootbus];
-        u16 bdf = pci->bdf;
-        u32 addr;
-        int type = PCI_REGION_TYPE_PREFMEM;
-        pci_bios_bus_reserve(bus, type, 0x4000);
-        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
-        addr = bus->r[type].base;
-        pci_config_writel(bdf, 0x180, addr | 1);
-        dprintf(1, "Mapping VTBAR at 0x%x\n", addr);
 }
 
 /* PIIX3/PIIX4 PCI to ISA bridge */
@@ -165,7 +161,7 @@ static void ich10_isa_brigde_init_and_hpet_enable(struct pci_device *pci,
                                                   void *arg)
 {
     piix_isa_bridge_init(pci, arg);
-    ich10_lpc_rcba(pci, arg);
+    ich10_enable_hpet(pci, arg);
 }
 
 static const struct pci_device_id pci_isa_bridge_tbl[] = {
@@ -184,8 +180,6 @@ static const struct pci_device_id pci_isa_bridge_tbl[] = {
                piix_isa_bridge_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
                piix_isa_bridge_init),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x342e, ich10_map_vtbar),
-
 
     PCI_DEVICE_END
 };
@@ -413,6 +407,24 @@ pci_bios_init_bus(void)
 static void pci_bios_bus_get_bar(struct pci_bus *bus, int bdf, int bar,
                                  u32 *val, u32 *size)
 {
+
+    if (bar == PCI_SPECIAL_SLOT) {
+        u32 devid = pci_config_readw(bdf, PCI_DEVICE_ID);
+        if (devid == PCI_DEVICE_ID_INTEL_ICH10_1) {
+            dprintf(1, "Mapping LPC RCBA\n");
+            *size = 0x4000;
+            *val = 0xffffc000;
+        } else if (devid == 0x342e) {
+            dprintf(1, "Mapping VTBAR\n");
+            *size = 0x2000;
+            *val = 0xffffe000;
+        } else {
+            dprintf(1, "Trying to map unknown special slot!\n");
+            *size = 0;
+            *val = 0;
+        }
+        return;
+    }
     u32 ofs = pci_bar(bdf, bar);
     u32 old = pci_config_readl(bdf, ofs);
     u32 mask;
@@ -488,6 +500,14 @@ static void pci_bios_check_device(struct pci_bus *bus, struct pci_device *dev)
 
     for (i = 0; i < PCI_NUM_REGIONS; i++) {
         u32 val, size;
+        if (i == PCI_SPECIAL_SLOT) {
+            if ((dev->vendor != PCI_VENDOR_ID_INTEL)
+                || ((dev->device != PCI_DEVICE_ID_INTEL_ICH10_1)
+                    && (dev->device != 0x342e))) {
+                continue;
+            } else
+                dprintf(1, "PCI special slot\n");
+        }
         pci_bios_bus_get_bar(bus, bdf, i, &val, &size);
         if (val == 0) {
             continue;
