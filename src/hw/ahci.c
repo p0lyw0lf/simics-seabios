@@ -319,7 +319,10 @@ ahci_port_reset(struct ahci_ctrl_s *ctrl, u32 pnr)
         if (!(val & (PORT_CMD_FIS_RX | PORT_CMD_START |
                      PORT_CMD_FIS_ON | PORT_CMD_LIST_ON)))
             break;
-        val &= ~(PORT_CMD_FIS_RX | PORT_CMD_START);
+        val &= ~PORT_CMD_START;
+        ahci_port_writel(ctrl, pnr, PORT_CMD, val);
+        val = ahci_port_readl(ctrl, pnr, PORT_CMD);
+        val &= ~PORT_CMD_FIS_RX;
         ahci_port_writel(ctrl, pnr, PORT_CMD, val);
         if (timer_check(end)) {
             warn_timeout();
@@ -412,7 +415,10 @@ static struct ahci_port_s* ahci_port_realloc(struct ahci_port_s *port)
     ahci_port_writel(port->ctrl, port->pnr, PORT_FIS_ADDR, (u32)port->fis);
 
     cmd = ahci_port_readl(port->ctrl, port->pnr, PORT_CMD);
-    cmd |= (PORT_CMD_FIS_RX|PORT_CMD_START);
+    cmd |= PORT_CMD_FIS_RX;
+    ahci_port_writel(port->ctrl, port->pnr, PORT_CMD, cmd);
+    cmd = ahci_port_readl(port->ctrl, port->pnr, PORT_CMD);
+    cmd |= PORT_CMD_START;
     ahci_port_writel(port->ctrl, port->pnr, PORT_CMD, cmd);
 
     return port;
@@ -436,6 +442,7 @@ static int ahci_port_setup(struct ahci_port_s *port)
     ahci_port_writel(ctrl, pnr, PORT_CMD, cmd);
 
     /* spin up */
+    cmd = ahci_port_readl(ctrl, pnr, PORT_CMD);
     cmd |= PORT_CMD_SPIN_UP;
     ahci_port_writel(ctrl, pnr, PORT_CMD, cmd);
     u32 end = timer_calc(AHCI_LINK_TIMEOUT);
@@ -473,6 +480,7 @@ static int ahci_port_setup(struct ahci_port_s *port)
     }
 
     /* start device */
+    cmd = ahci_port_readl(ctrl, pnr, PORT_CMD);
     cmd |= PORT_CMD_START;
     ahci_port_writel(ctrl, pnr, PORT_CMD, cmd);
 
