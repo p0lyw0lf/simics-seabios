@@ -90,6 +90,10 @@ static u32 pci_size_roundup(u32 size)
 
 /* host irqs corresponding to PCI irqs A-D */
 const u8 pci_irqs[4] = {
+    0x10, 0x11, 0x12, 0x13    
+};
+
+const u8 pci_irqs_isa[4] = {
     10, 10, 11, 11
 };
 
@@ -146,7 +150,7 @@ static void piix_isa_bridge_init(struct pci_device *pci, void *arg)
     elcr[0] = 0x00;
     elcr[1] = 0x00;
     for (i = 0; i < 4; i++) {
-        irq = pci_irqs[i];
+        irq = pci_irqs_isa[i];
         /* set to trigger level */
         elcr[irq >> 3] |= (1 << (irq & 7));
         /* activate irq remapping in PIIX */
@@ -723,7 +727,9 @@ pci_setup(void)
         pci_probe_devices();
         return;
     }
-
+    
+    int i;   
+ 
     dprintf(3, "pci setup\n");
 
     setup_pci_mcfg();
@@ -743,17 +749,22 @@ pci_setup(void)
     dprintf(1, "=== PCI new allocation pass #1 ===\n");
     busses = malloc_tmp(sizeof(*busses) * busses_count);
     memset(busses, 0, sizeof(*busses) * busses_count);
-    pci_bios_check_device_in_bus(0 /* host bus */);
+    for( i=0; i<busses_count; i++ ){
+         pci_bios_check_device_in_bus(i);  
+    }
     if (pci_bios_init_root_regions(start, end) != 0) {
         panic("PCI: out of address space\n");
     }
 
     dprintf(1, "=== PCI new allocation pass #2 ===\n");
-    dprintf(1, "PCI: init bases bus 0 (primary)\n");
-    pci_bios_init_bus_bases(&busses[0]);
-    pci_bios_map_device_in_bus(0 /* host bus */);
+    for( i=0; i<busses_count; i++ ){
 
-    pci_bios_init_device_in_bus(0 /* host bus */);
+        dprintf(1, "PCI: init bases bus %d\n", i);
+        pci_bios_init_bus_bases(&busses[i]);
+        pci_bios_map_device_in_bus(i);
+
+        pci_bios_init_device_in_bus(i);            
+    }
 
     struct pci_device *pci;
     foreachpci(pci) {
