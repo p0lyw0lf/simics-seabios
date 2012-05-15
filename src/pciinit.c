@@ -219,6 +219,15 @@ static void ich10_sata_ide_init(struct pci_device *pci, void *arg)
     storage_ide_init(pci, arg);
 }
 
+static void x58_pcie_port_init(struct pci_device *pci, void *arg)
+{
+    
+    u16 bdf = pci->bdf;     
+    /* enable bus mastering */
+    pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_MASTER);
+
+}
+
 static void pic_ibm_init(struct pci_device *pci, void *arg)
 {
     /* PIC, IBM, MPIC & MPIC2 */
@@ -247,6 +256,28 @@ static const struct pci_device_id pci_class_tbl[] = {
                      pic_ibm_init),
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_IBM, 0xFFFF, PCI_CLASS_SYSTEM_PIC,
                      pic_ibm_init),
+
+    /* X58 PCI-Express 5520 ports */
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_1,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_2,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_3,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_4,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_5,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_6,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_7,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_8,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_9,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_10,
+                     PCI_CLASS_BRIDGE_PCI, x58_pcie_port_init),
 
     /* 0xff00 */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_APPLE, 0x0017, 0xff00, apple_macio_init),
