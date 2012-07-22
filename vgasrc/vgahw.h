@@ -141,10 +141,14 @@ static inline int vgahw_save_restore(int cmd, u16 seg, void *data) {
 }
 
 static inline int vgahw_get_ddc_capabilities(u16 unit) {
+    if (CONFIG_VGA_BOCHS)
+        return bochsvga_get_ddc_capabilities(unit);
     return stdvga_get_ddc_capabilities(unit);
 }
 
 static inline int vgahw_read_edid(u16 unit, u16 block, u16 seg, void *data) {
+    if (CONFIG_VGA_BOCHS)
+        return bochsvga_read_edid(unit, block, seg, data);
     return stdvga_read_edid(unit, block, seg, data);
 }
 
