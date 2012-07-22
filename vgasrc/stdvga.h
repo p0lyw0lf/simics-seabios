@@ -77,5 +77,7 @@ int stdvga_set_dacformat(struct vgamode_s *vmode_g, int val);
 int stdvga_save_restore(int cmd, u16 seg, void *data);
 void stdvga_enable_video_addressing(u8 disable);
 int stdvga_setup(void);
+int stdvga_get_ddc_capabilities(u16 unit);
+int stdvga_read_edid(u16 unit, u16 block, u16 seg, void *data);
 
 #endif // stdvga.h

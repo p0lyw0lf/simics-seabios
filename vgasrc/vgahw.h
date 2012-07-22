@@ -145,4 +145,12 @@ static inline int vgahw_get_linesize(struct vgamode_s *vmode_g) {
     return stdvga_get_linesize(vmode_g);
 }
 
+static inline int vgahw_get_ddc_capabilities(u16 unit) {
+    return stdvga_get_ddc_capabilities(unit);
+}
+
+static inline int vgahw_read_edid(u16 unit, u16 block, u16 seg, void *data) {
+    return stdvga_read_edid(unit, block, seg, data);
+}
+
 #endif // vgahw.h
