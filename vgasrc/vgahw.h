@@ -9,6 +9,7 @@
 #include "bochsvga.h" // bochsvga_set_mode
 #include "stdvga.h" // stdvga_set_mode
 #include "geodevga.h" // geodevga_setup
+#include "vbe_edid.h"
 
 static inline struct vgamode_s *vgahw_find_mode(int mode) {
     if (CONFIG_VGA_CIRRUS)
@@ -142,13 +143,13 @@ static inline int vgahw_save_restore(int cmd, u16 seg, void *data) {
 
 static inline int vgahw_get_ddc_capabilities(u16 unit) {
     if (CONFIG_VGA_BOCHS)
-        return bochsvga_get_ddc_capabilities(unit);
+        return vesa_get_ddc_capabilities(unit);
     return stdvga_get_ddc_capabilities(unit);
 }
 
 static inline int vgahw_read_edid(u16 unit, u16 block, u16 seg, void *data) {
     if (CONFIG_VGA_BOCHS)
-        return bochsvga_read_edid(unit, block, seg, data);
+        return vesa_read_edid(unit, block, seg, data);
     return stdvga_read_edid(unit, block, seg, data);
 }
 
