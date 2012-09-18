@@ -55,6 +55,8 @@ static inline void wbinvd(void)
 #define CPUID_MSR (1 << 5)
 #define CPUID_APIC (1 << 9)
 #define CPUID_MTRR (1 << 12)
+#define CPUID_ECX_VMX (1 << 5)
+#define CPUID_ECX_SMX (1 << 6)
 static inline void cpuid(u32 index, u32 *eax, u32 *ebx, u32 *ecx, u32 *edx)
 {
     asm("cpuid"
@@ -472,6 +474,9 @@ static inline void free(void *data) {
 
 // mtrr.c
 void mtrr_setup(void);
+
+// mtrr.c
+void feature_setup(void);
 
 // romlayout.S
 void reset_vector(void) __noreturn;
