@@ -225,6 +225,9 @@ maininit(void)
     // Initialize mtrr
     mtrr_setup();
 
+    // Initialize CPU configurable features (VMX)
+    feature_setup();
+
     // Initialize pci
     pci_setup();
     smm_init();
