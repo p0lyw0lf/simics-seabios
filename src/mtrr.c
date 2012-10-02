@@ -116,6 +116,12 @@ void feature_setup(void)
     if (!(ecx & CPUID_ECX_VMX))
         return;
 
+    u64 current_feat_cntr = rdmsr(MSR_IA32_Feature_Control);
+
+    if (current_feat_cntr & 1)
+            /* Register is locked. Don't try to change it. */
+            return;
+
     /* Enable VMXON outside SMX */
     u32 feat_cntr = 0x4;
 
