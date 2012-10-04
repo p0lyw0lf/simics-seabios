@@ -635,6 +635,18 @@ ahci_init_controller(struct pci_device *pci)
     val = ahci_ctrl_readl(ctrl, HOST_CTL);
     ahci_ctrl_writel(ctrl, HOST_CTL, val | HOST_CTL_AHCI_EN);
 
+    /* Reset the controller */
+    ahci_ctrl_writel(ctrl, HOST_CTL, val | HOST_CTL_AHCI_EN | HOST_CTL_RESET);
+
+    /* Wait for the reset bit to clear */
+    do {
+            val = ahci_ctrl_readl(ctrl, HOST_CTL);
+    } while (val & HOST_CTL_RESET);
+
+    /* Re-enable AHCI */
+    val = ahci_ctrl_readl(ctrl, HOST_CTL);
+    ahci_ctrl_writel(ctrl, HOST_CTL, val | HOST_CTL_AHCI_EN);
+
     ctrl->caps = ahci_ctrl_readl(ctrl, HOST_CAP);
     ctrl->ports = ahci_ctrl_readl(ctrl, HOST_PORTS_IMPL);
     dprintf(2, "AHCI: cap 0x%x, ports_impl 0x%x\n",
