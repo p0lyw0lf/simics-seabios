@@ -51,14 +51,17 @@ Make your modifications in the proper branch.
 When you are ready to distribute a new version, first compile it in
 the seabios directory.
 
-Copy out/bios.bin to dumps/x86. The name should be
-seabios-simics-<platform>-<mainline-short-version>.bin, where
-<mainline-short-version> is the version string from out/version.c up
-to and including the date (skip the time and the build host) and
-<platform> is the branch name or "generic" for the simics branch.
+NOTE: to build for ATA, you need to run 'make config' first. Remember to revert
+the changes before updating the tarball
 
-Tag the tree with the simics-<platform>-<mainline-short-version> part
-of the filename.
+Copy out/bios.bin to dumps/x86. The name should be
+seabios-simics-<branch>-<sata/ata>-<platform>-<mainline-short-version>.bin,
+where <mainline-short-version> is the version string from out/version.c up to
+and including the date (skip the time and the build host), <platform> is the
+branch name or "generic" for the simics branch, <sata/ata> indicates the
+configuration used and <branch> is the Simics branch where this repo lives.
+
+Tag the tree to make it easy to correlate filename with repo commit.
 
 Create a new tar ball and update
 src/misc/seabios/seabios-simics-source.tar.gz.
