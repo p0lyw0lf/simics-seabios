@@ -1,0 +1,73 @@
+Compiling SeaBIOS
+-----------------
+
+Unpack the repository:
+
+  tar xzf <path-to-src-misc-seabios>/seabios-simics-source.tar.gz
+
+Switch to the appropriate branch. For the x86-440bx model:
+
+  git checkout x86-440bx
+
+And for the generic Simics bios:
+
+  git checkout simics
+
+Recent older versions can be checked out via their tag. Use "git tag"
+to find the list of tags.
+
+Build:
+
+  make
+
+To use the compiled bios, point $bios to <seabios>/out/bios.bin.
+
+Debugging SeaBIOS
+-----------------
+
+Seabios outputs debug messages to port 0x402. A pc-config device
+object is typically installed on that port, and you can enable logging
+from that object through the log system with:
+
+  $system.motherboard.conf.log-level 4.
+
+To pinpoint problems in the BIOS, a simple debug method is to add more
+debug output in the BIOS. To do that, add dprintf statements (similar
+to regular C printf) in the code and recompile. The first argument to
+dprintf is the debug level, which you would normally set to 1 to get
+the output on the debug port (0x402).
+
+The symbol table to load in Simics or gdb-remote can be found in
+<seabios>/out/rom.o. Since it is optimized code, it may be difficult
+to do stacktrace, print local variables etc.
+
+Developing SeaBIOS
+------------------
+
+Follow the steps above in "Compiling SeaBIOS" to setup a SeaBIOS git.
+
+Make your modifications in the proper branch.
+
+When you are ready to distribute a new version, first compile it in
+the seabios directory.
+
+Copy out/bios.bin to dumps/x86. The name should be
+seabios-simics-<platform>-<mainline-short-version>.bin, where
+<mainline-short-version> is the version string from out/version.c up
+to and including the date (skip the time and the build host) and
+<platform> is the branch name or "generic" for the simics branch.
+
+Tag the tree with the simics-<platform>-<mainline-short-version> part
+of the filename.
+
+Create a new tar ball and update
+src/misc/seabios/seabios-simics-source.tar.gz.
+
+Update the *-system.include scripts that point to an older SeaBIOS to
+point to the new version.
+
+Update create-links.py to link to the new version.
+
+Update distributions.list to include new version.
+
+Add a note to RELEASENOTES.seabios.docu in this directory.
