@@ -132,14 +132,11 @@ tryReboot(void)
     // Reboot using ACPI RESET_REG
     acpi_reboot();
 
-    // Try keyboard controller reboot.
-    i8042_reboot();
-
-    // Try PCI 0xcf9 reboot
+    // Reboot with reset of entire platform through the 0xcf9 register in the
+    // south bridge. This will reset not only the CPU(s), but also the north
+    // and south bridges, PCI(e), and pretty much everything connected to the
+    // platform.
     pci_reboot();
-
-    // Try triple fault
-    asm volatile("int3");
 
     panic("Could not reboot");
 }
