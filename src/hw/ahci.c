@@ -371,7 +371,9 @@ ahci_port_alloc(struct ahci_ctrl_s *ctrl, u32 pnr)
     memset(port->cmd, 0, 256);
 
     ahci_port_writel(ctrl, pnr, PORT_LST_ADDR, (u32)port->list);
+    ahci_port_writel(ctrl, pnr, PORT_LST_ADDR_HI, 0);
     ahci_port_writel(ctrl, pnr, PORT_FIS_ADDR, (u32)port->fis);
+    ahci_port_writel(ctrl, pnr, PORT_FIS_ADDR_HI, 0);
     return port;
 }
 
