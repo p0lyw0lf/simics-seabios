@@ -27,6 +27,16 @@ SECTIONS
      }
 }
 EOF
+
+
+# set $CC=gcc and $LD=ld global vars for Make
+echo "! Check that \$CC and \$LD are set in Makefile or manually"
+echo "! They must not be empty"
+echo "Current vars are: "
+echo "\$CC="$CC
+echo "\$LD="$LD
+echo " - "
+
 $CC -O -g -c $TMPFILE1 -o $TMPFILE1o > /dev/null 2>&1
 $LD -T $TMPFILE1_ld $TMPFILE1o -o $TMPFILE2o > /dev/null 2>&1
 if [ $? -ne 0 ]; then

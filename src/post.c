@@ -115,6 +115,11 @@ ram_probe(void)
                    | (inb_cmos(CMOS_MEM_EXTMEM_HIGH) << 18))
                   + 1 * 1024 * 1024);
         RamSize = rs;
+        
+        // cut off 128 MB stolen memory for graphics
+        u32 stolen_mem_size = 128 * 1024 * 1024;
+        rs -= stolen_mem_size;
+        
         add_e820(0, rs, E820_RAM);
 
         // Check for memory over 4Gig

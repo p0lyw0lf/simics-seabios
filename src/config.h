@@ -43,12 +43,12 @@
 #define BUILD_SMM_INIT_ADDR       0x38000
 #define BUILD_SMM_ADDR            0xa8000
 #define BUILD_SMM_SIZE            0x8000
-#define BUILD_MAX_HIGHMEM         0xe0000000
+#define BUILD_MAX_HIGHMEM         0xc0000000
 
-#define BUILD_PCIMEM_START        0xe0000000
+#define BUILD_PCIMEM_START        0xc0000000
 #define BUILD_PCIMEM_END          0xfec00000    /* IOAPIC is mapped at */
 
-#define BUILD_MCFG_START          0xe0000000
+#define BUILD_MCFG_START          0xc0000000
 #define BUILD_MCFG_SIZE           0x10000000    // 256 MB / 128 MB / 64 MB
 
 #define BUILD_IOAPIC_ADDR         0xfec00000
