@@ -63,7 +63,7 @@ DefinitionBlock (
             Name (_HID, EisaId ("PNP0C02"))
             Name (_CRS, ResourceTemplate() {
                 /* MCFG */
-                Memory32Fixed (ReadWrite, 0xE0000000, 0x10000000)
+                Memory32Fixed (ReadWrite, 0xC0000000, 0x10000000)
                 /* hostfs */
                 Memory32Fixed (ReadWrite, 0xFFE81000, 0x1000)
             })
@@ -104,7 +104,7 @@ DefinitionBlock (
             }
 
 	    hotplug_slot(1, 0x0001)
-	    hotplug_slot(2, 0x0002)
+//	    hotplug_slot(2, 0x0002)
 	    hotplug_slot(3, 0x0003)
 	    hotplug_slot(4, 0x0004)
 	    hotplug_slot(5, 0x0005)
@@ -173,7 +173,7 @@ DefinitionBlock (
                     ,, , AddressRangeMemory, TypeStatic)
                 DWordMemory (ResourceProducer, PosDecode, MinFixed, MaxFixed, NonCacheable, ReadWrite,
                     0x00000000,         // Address Space Granularity
-                    0xF0000000,         // Address Range Minimum
+                    0xE0000000,         // Address Range Minimum
                     0xFEBFFFFF,         // Address Range Maximum
                     0x00000000,         // Address Translation Offset
                     0x1EC00000,         // Address Length
@@ -786,7 +786,7 @@ DefinitionBlock (
 
         Method(_L01) {
             gen_pci_hotplug(1)
-            gen_pci_hotplug(2)
+//            gen_pci_hotplug(2)
             gen_pci_hotplug(3)
             gen_pci_hotplug(4)
             gen_pci_hotplug(5)
