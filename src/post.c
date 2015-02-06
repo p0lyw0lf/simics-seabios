@@ -116,8 +116,8 @@ ram_probe(void)
                   + 1 * 1024 * 1024);
         RamSize = rs;
         
-        // cut off 128 MB stolen memory for graphics
-        u32 stolen_mem_size = 128 * 1024 * 1024;
+        // cut off 256 MB stolen memory for graphics
+        u32 stolen_mem_size = 256 * 1024 * 1024;
         rs -= stolen_mem_size;
         
         add_e820(0, rs, E820_RAM);
