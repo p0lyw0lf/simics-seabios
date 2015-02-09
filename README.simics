@@ -22,6 +22,17 @@ Build:
 
 To use the compiled bios, point $bios to <seabios>/out/bios.bin.
 
+Compiling SeaBIOS for Gfx on Moscow SLES10 x64 host
+-----------------
+  $ svn co https://ssvn.ims.intel.com/ssg/spd/stc/rscommon/trunk/gpl/seabios/
+  $ cd seabios
+  $ tar zxvf seabios-x58-gfx-simics-srcs.tgz
+  $ cd seabios-x58-gfx-simics-srcs
+  $ git checkout x58-generic-gfx
+  $ CC=/usr/intel/pkgs/gcc/4.4.2/bin/gcc LD=ld make clean all
+  $ cp out/bios.bin <your-path>/images/seabios-simics-x58-gfx-1.6.3-20140611-<your-extra-tags-and-git-sha>
+  # example of binary name: seabios-simics-x58-gfx-1.6.3-20140611-3333a98-stolen-256.bin
+
 Debugging SeaBIOS
 -----------------
 
