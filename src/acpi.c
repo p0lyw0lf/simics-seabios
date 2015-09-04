@@ -235,12 +235,13 @@ struct dmar_drhd {
 } PACKED;
 
 struct dmar_device_scope {
-    DMAR_SUB_HEADER_DEF
+    u8 type;
+    u8 length;
     u16 reserved;
     u8  enum_id;
     u8  bus_num;
-    // path 2 * N
 } PACKED;
+#define DMAR_DEVICE_SCOPE_PATH u16
 
 struct dmar_rmrr {
     DMAR_SUB_HEADER_DEF
@@ -766,37 +767,85 @@ build_mcfg(void)
     return mcfg;
 }
 
-static void *
+static void *       // fills (DMAR + DRHD + scopes) table
 build_dmar(void)
 {
-    struct pci_device *pci;
-    pci = pci_find_device(0x8086, 0x342e);
+    // get address of VT BAR
+    struct pci_device *pci = pci_find_device(0x8086, 0x342e);
     if (pci == NULL) {
-        dprintf(1, "NO DMAR FOUND\n");
+        dprintf(1, "NO CORE_MISC device found\n");
         return NULL;
     }
-    u16 bdf = pci->bdf;
-    u32 addr = pci_config_readl(bdf, 0x180);
-    if (!addr & 1) {
-            dprintf(1, "NO DMAR ADDR\n");
+    u32 vt_bar = pci_config_readl(pci->bdf, 0x180); // 0x180 - vtbar register
+    if (!(vt_bar & 1)) { // Check if vtbar is enabled (0 bit)
+        dprintf(1, "VTBAR DISABLED\n");
         return NULL;
     }
-    addr &= ~0xfff;
+    
+    u32 remap_unit_0_addr = (vt_bar & (~0xfff));        // address of VT-d for all except GFX
+    u32 remap_unit_1_addr = remap_unit_0_addr + 0x1000; // address of GFX VT-d (shifted by 0x1000 in model)
 
-    int dmar_size = sizeof(struct dmar_descriptor_rev1)
-        + sizeof(struct dmar_drhd);
+    // Allocate space for DMAR table and its substructures
+    int dmar_size = sizeof(struct dmar_descriptor_rev1    ) + /* DMAR header                    */
+                  + sizeof(struct dmar_drhd               ) + /*   - DRHD header for GFX VT-d   */
+                  + sizeof(struct dmar_device_scope       ) + /*     -- GFX device              */
+                  + sizeof(DMAR_DEVICE_SCOPE_PATH         ) + /*        --- path to GFX device  */
+                  + sizeof(struct dmar_drhd               );  /*   - DRHD header for misc VT-d  */
     struct dmar_descriptor_rev1 *dmar = malloc_high(dmar_size);
     memset(dmar, 0, dmar_size);
+
+    //[DMAR] - DMAR HEADER
+    dmar->signature = DMAR_SIGNATURE;   // == 0x52414D44 == "DMAR"
+    dmar->length = dmar_size;
+    dmar->revision = 1;
+    memcpy(dmar->oem_id,            "INTEL ", 6);
+    memcpy(dmar->oem_table_id,      "SKL ", 4);
+    dmar->oem_revision = cpu_to_le32(1);
+    memcpy(dmar->asl_compiler_id,  "INTL", 4);
+    dmar->asl_compiler_revision = cpu_to_le32(1);
+    //dmar->checksum - to be computed in the very end
     dmar->width = 36;
     dmar->flags = 1;
 
-    struct dmar_drhd *drhd = (void*)&dmar[1];
-    drhd->type = DMAR_DRHD;
-    drhd->length = sizeof(*drhd);
-    drhd->flags = 1; // INCLUDE_PCI_ALL
-    drhd->address = addr;
+    // [DMAR->DRHD_1] - VTD for GFX
+    struct dmar_drhd *drhd_1 = (void*)dmar + sizeof(*dmar);
+    drhd_1->type = DMAR_DRHD;
+    drhd_1->length = sizeof(*drhd_1) ;
+    drhd_1->flags = 0;          // do not include all PCI devices in segment
+    drhd_1->segment = 0;
+    drhd_1->address = remap_unit_1_addr;  // gfx VT-d  is remap_unit_1 in model
 
-    build_header((void*)dmar, DMAR_SIGNATURE, dmar_size, 1);
+    // [DMAR->DRHD_1->GFX] -  0/2/0 GFX device in DRHD_1 device scope
+    struct dmar_device_scope *gfx = (void*)drhd_1 + sizeof(*drhd_1);
+    gfx->type    = 1;    // PCI end-point device
+    gfx->length  = sizeof(*gfx);
+    gfx->enum_id = 0;   // reserved (0) - for PCI end-point device
+    gfx->bus_num = 0;   // PCI bus number
+    DMAR_DEVICE_SCOPE_PATH* gfx_path = (void*)gfx + sizeof(*gfx);
+    *gfx_path = 0x0002; // PCI path to gfx (0-)2-0 in 2 bytes reverted form;
+    gfx->length += sizeof(*gfx_path);
+    // end of [DMAR->DRHD_1->GFX]
+
+    drhd_1->length += (gfx->length);
+    // end of [DMAR->DRHD_1]
+
+    // [DMAR->DRHD_2] - VTD for other devices
+    struct dmar_drhd *drhd_2 = (void*)dmar + sizeof(*dmar) + drhd_1->length;
+    drhd_2->type = DMAR_DRHD;
+    drhd_2->length = sizeof(*drhd_2);
+    drhd_2->flags = 1;          // include all other PCI devices in segment
+    drhd_2->segment = 0;
+    drhd_2->address = remap_unit_0_addr; // non-gfx VT-d is remap_unit_0 in model
+    // end of [DMAR->DRHD_2]
+
+    dmar->checksum = 0 - checksum(dmar, dmar->length); // finally compute checksum for the whole DMAR table
+    // end of [DMAR]
+
+    if(dmar->length != dmar_size) {
+        dprintf(1, "FATAL : DMAR->length != allocated DMAR_SIZE \n");
+        while (1) {}
+    }
+    
     return dmar;
 }
 
