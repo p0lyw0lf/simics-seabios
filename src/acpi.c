@@ -698,7 +698,8 @@ acpi_setup(void)
     ACPI_INIT_TABLE(fadt);
     ACPI_INIT_TABLE(build_ssdt());
     ACPI_INIT_TABLE(build_madt());
-    ACPI_INIT_TABLE(build_hpet());
+    if (CONFIG_ACPI_HPET)
+            ACPI_INIT_TABLE(build_hpet());
     ACPI_INIT_TABLE(build_srat());
     if (pci->device == PCI_DEVICE_ID_INTEL_ICH9_LPC)
         ACPI_INIT_TABLE(build_mcfg_q35());
