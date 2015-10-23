@@ -86,7 +86,7 @@ menu "Hardware support"
     config ATA
         depends on DRIVES
         bool "ATA controllers"
-        default y
+        default n
         help
             Support for IDE disk code.
     config ATA_DMA
