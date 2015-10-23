@@ -46,6 +46,7 @@ build_header(struct acpi_table_header *h, u32 sig, int len, u8 rev)
     h->checksum -= checksum(h, len);
 }
 
+#if 0
 #define PIIX4_ACPI_ENABLE       0xf1
 #define PIIX4_ACPI_DISABLE      0xf0
 #define PIIX4_GPE0_BLK          0xafe0
@@ -77,6 +78,7 @@ static void piix4_fadt_setup(struct pci_device *pci, void *arg)
     fadt->flags = cpu_to_le32((1 << 0) | (1 << 2) | (1 << 5) | (1 << 7) |
                               (1 << 15));
 }
+#endif
 
 /* PCI_VENDOR_ID_INTEL && PCI_DEVICE_ID_INTEL_ICH9_LPC */
 void ich9_lpc_fadt_setup(struct pci_device *dev, void *arg)
@@ -143,11 +145,11 @@ static void ich10_fadt_init(struct pci_device *pci, void *arg)
 static const struct pci_device_id fadt_init_tbl[] = {
     /* PIIX4 Power Management device (for ACPI) */
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3,
-               piix4_fadt_setup),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_LPC,
-               ich9_lpc_fadt_setup),
+               piix4_virtutech_fadt_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_0,
                piix4_virtutech_fadt_init),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_LPC,
+               ich9_lpc_fadt_setup),
     // ICH10D0
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                ich10_fadt_init),
