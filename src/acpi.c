@@ -93,12 +93,33 @@ void ich9_lpc_fadt_setup(struct pci_device *dev, void *arg)
                               (1 << 15));
 }
 
+#define VIRTUTECH_ACPI_ENABLE   0xf0
+#define VIRTUTECH_ACPI_DISABLE  0xf1
+#define VIRTUTECH_GPE0_BLK      (PORT_ACPI_PM_BASE + 0x0c)
+#define VIRTUTECH_GPE0_BLK_LEN  4
+
+static void piix4_virtutech_fadt_init(struct pci_device *pci, void *arg)
+{
+    struct fadt_descriptor_rev1 *fadt = arg;
+    fadt->acpi_enable = VIRTUTECH_ACPI_ENABLE;
+    fadt->acpi_disable = VIRTUTECH_ACPI_DISABLE;
+    fadt->gpe0_blk = cpu_to_le32(VIRTUTECH_GPE0_BLK);
+    fadt->gpe0_blk_len = VIRTUTECH_GPE0_BLK_LEN;
+    /* WBINVD + PWR_BUTTON + SLP_BUTTON + FIX_RTC */
+    fadt->flags = cpu_to_le32((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6));
+    /* Legacy devices and 8042 present */
+    fadt->ia32_boot_arch = 3;
+}
+
 static const struct pci_device_id fadt_init_tbl[] = {
     /* PIIX4 Power Management device (for ACPI) */
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3,
                piix4_fadt_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_LPC,
                ich9_lpc_fadt_setup),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_0,
+               piix4_virtutech_fadt_init),
+
     PCI_DEVICE_END
 };
 
