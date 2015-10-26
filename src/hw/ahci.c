@@ -162,8 +162,7 @@ static int ahci_command(struct ahci_port_s *port_gf, int iswrite, int isatapi,
     } while (status & ATA_CB_STAT_BSY);
 
     success = (0x00 == (status & (ATA_CB_STAT_BSY | ATA_CB_STAT_DF |
-                                  ATA_CB_STAT_ERR)) &&
-               ATA_CB_STAT_RDY == (status & (ATA_CB_STAT_RDY)));
+                                  ATA_CB_STAT_ERR)));
     if (success) {
         dprintf(8, "AHCI/%d: ... finished, status 0x%x, OK\n", pnr,
                 status);
@@ -474,18 +473,23 @@ static int ahci_port_setup(struct ahci_port_s *port)
     cmd |= PORT_CMD_START;
     ahci_port_writel(ctrl, pnr, PORT_CMD, cmd);
 
-    sata_prep_simple(&port->cmd->fis, ATA_CMD_IDENTIFY_PACKET_DEVICE);
+    /* Check for ATAPI or ATA */
+    struct ahci_fis_s *fis  = GET_GLOBAL(port->fis);
+    if(fis->rfis[5] == 0x14 && fis->rfis[6] == 0xeb)
+            port->atapi = 1;
+    else
+            port->atapi = 0;
+
+    if (port->atapi)
+            sata_prep_simple(&port->cmd->fis, ATA_CMD_IDENTIFY_PACKET_DEVICE);
+    else
+            sata_prep_simple(&port->cmd->fis, ATA_CMD_IDENTIFY_DEVICE);
     rc = ahci_command(port, 0, 0, buffer, sizeof(buffer));
-    if (rc == 0) {
-        port->atapi = 1;
-    } else {
-        port->atapi = 0;
-        sata_prep_simple(&port->cmd->fis, ATA_CMD_IDENTIFY_DEVICE);
-        rc = ahci_command(port, 0, 0, buffer, sizeof(buffer));
-        if (rc < 0)
+    if (rc < 0) {
+            dprintf(1, "AHCI/%d: Error sending IDENTIFY %sDEVICE command\n",
+                    port->pnr, port->atapi ? "PACKET " : "");
             return -1;
     }
-
     port->drive.cntl_id = pnr;
     port->drive.removable = (buffer[0] & 0x80) ? 1 : 0;
 
