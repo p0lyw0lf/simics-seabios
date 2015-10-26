@@ -47,12 +47,18 @@ static void modify_shadow(unsigned long start, unsigned long len, int mode)
 static void
 __copy_bios(void)
 {
+    /* Read (and execute) from PCI, write to RAM */
+    modify_shadow(0xf0000, 0x10000, Write_Only);
+
     // Copy bios.
 //        void *mem = (void*)(BUILD_ROM_START + i * 32*1024);
         memcpy((void*)BUILD_BIOS_ADDR,
                (void*)(BIOS_SRC_OFFSET + BUILD_BIOS_ADDR), BUILD_BIOS_SIZE);
 
 //    memcpy((void*)BUILD_BIOS_ADDR, (void*)BIOS_SRC_ADDR, BUILD_BIOS_SIZE);
+
+    /* Keep BIOS read/write */
+    modify_shadow(0xf0000, 0x10000, Read_Write);
 }
 
 #else
@@ -150,18 +156,12 @@ make_bios_writable(void)
     dprintf(3, "enabling shadow ram\n");
 
 #if CONFIG_VIRTUTECH_PC_SHADOW
-    /* Read (and execute) from PCI, write to RAM */
-    modify_shadow(0xf0000, 0x10000, Write_Only);
-
     /* Run the copy from the high address to avoid simulator flushes after each
        write (the flushes ruin performance) */
 //    u32 pos = (u32)__copy_bios - BUILD_BIOS_ADDR + BIOS_SRC_ADDR;
     u32 pos = (u32)__copy_bios + BIOS_SRC_OFFSET;
     void (*func)(void) = (void*)pos;
     func();
-
-    /* Keep BIOS read/write */
-    modify_shadow(0xf0000, 0x10000, Read_Write);
 #else
 
     // At this point, statically allocated variables can't be written,
