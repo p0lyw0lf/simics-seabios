@@ -102,3 +102,30 @@ void mtrr_setup(void)
     // Enable fixed and variable MTRRs; set default type.
     wrmsr_smp(MSR_MTRRdefType, 0xc00 | MTRR_MEMTYPE_WB);
 }
+
+#define MSR_IA32_Feature_Control 0x3a
+
+void feature_setup(void)
+{
+    if (CONFIG_COREBOOT)
+        return;
+
+    u32 eax, ebx, ecx, edx;
+    cpuid(1, &eax, &ebx, &ecx, &edx);
+    if (!(edx & CPUID_MSR))
+        return;
+    if (!(ecx & CPUID_ECX_VMX))
+        return;
+
+    /* Enable VMXON outside SMX */
+    u32 feat_cntr = 0x4;
+
+    /* Enable VMXON in SMX */
+    if (ecx & CPUID_ECX_SMX)
+            feat_cntr |= 0x2;
+
+    /* Set the lock bit */
+    feat_cntr |= 1;
+
+    wrmsr_smp(MSR_IA32_Feature_Control, feat_cntr);
+}

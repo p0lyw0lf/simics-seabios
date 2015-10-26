@@ -204,6 +204,9 @@ maininit(void)
     // Setup platform devices.
     platform_hardware_setup();
 
+    // Initialize CPU configurable features (VMX)
+    feature_setup();
+
     // Start hardware initialization (if optionrom threading)
     if (CONFIG_THREAD_OPTIONROMS)
         device_hardware_setup();

@@ -16,25 +16,25 @@
 
 #define APIC_ENABLED 0x0100
 
-struct { u32 ecx, eax, edx; } smp_mtrr[32] VARFSEG;
-u32 smp_mtrr_count VARFSEG;
+struct { u32 ecx, eax, edx; } smp_msr[33] VARFSEG;
+u32 smp_msr_count VARFSEG;
 
 void
 wrmsr_smp(u32 index, u64 val)
 {
     unsigned i;
     wrmsr(index, val);
-    for (i = 0; i < smp_mtrr_count; i++)
-        if (smp_mtrr[i].ecx == index)
+    for (i = 0; i < smp_msr_count; i++)
+        if (smp_msr[i].ecx == index)
             break;
-    if (i >= ARRAY_SIZE(smp_mtrr))
-        panic("smp_mtrr table overflow");
-    if (i == smp_mtrr_count)
-        smp_mtrr_count++;
+    if (i >= ARRAY_SIZE(smp_msr))
+        panic("smp_msr table overflow");
+    if (i == smp_msr_count)
+        smp_msr_count++;
 
-    smp_mtrr[i].ecx = index;
-    smp_mtrr[i].eax = val;
-    smp_mtrr[i].edx = val >> 32;
+    smp_msr[i].ecx = index;
+    smp_msr[i].eax = val;
+    smp_msr[i].edx = val >> 32;
 }
 
 u32 CountCPUs VARFSEG;
@@ -51,8 +51,8 @@ ASM16(
     "  movw %ax, %ds\n"
 
     // MTRR setup
-    "  movl $smp_mtrr, %esi\n"
-    "  movl smp_mtrr_count, %ebx\n"
+    "  movl $smp_msr, %esi\n"
+    "  movl smp_msr_count, %ebx\n"
     "1:testl %ebx, %ebx\n"
     "  jz 2f\n"
     "  movl 0(%esi), %ecx\n"
