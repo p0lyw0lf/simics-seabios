@@ -435,6 +435,12 @@ menu "Debugging"
 
 endmenu
 menu "Simics"
+    config VIRTUTECH_PC_SHADOW
+        bool "Virtutech PC Shadow"
+	default y
+        help
+	    Make BIOS area read/writable in Simics
+
     config USE_CMOS_BIOS_SMP_COUNT
         bool "Use Cmos BIOS SMP Count"
         default y
