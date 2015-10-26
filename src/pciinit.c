@@ -216,6 +216,12 @@ static void piix_ide_setup(struct pci_device *pci, void *arg)
     pci_config_writew(bdf, 0x42, 0x8000); // enable IDE1
 }
 
+static void ich10_sata_ide_init(struct pci_device *pci, void *arg)
+{
+    piix_ide_setup(pci, arg);
+    storage_ide_setup(pci, arg);
+}
+
 static void pic_ibm_setup(struct pci_device *pci, void *arg)
 {
     /* PIC, IBM, MPIC & MPIC2 */
@@ -285,8 +291,8 @@ static const struct pci_device_id pci_device_tbl[] = {
                piix_isa_bridge_setup),
 
     /* STORAGE IDE */
-    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_1,
-                     PCI_CLASS_STORAGE_IDE, piix_ide_setup),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_SATA,
+                     PCI_CLASS_STORAGE_IDE, ich10_sata_ide_init),
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB,
                      PCI_CLASS_STORAGE_IDE, piix_ide_setup),
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
