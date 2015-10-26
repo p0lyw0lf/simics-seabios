@@ -648,6 +648,15 @@ static const struct pci_device_id acpi_find_tbl[] = {
     /* PIIX4 Power Management device. */
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3, NULL),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_LPC, NULL),
+    // ICH10D0
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0, NULL),
+    // ICH10R
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1, NULL),
+    // ICH10 (consumer)
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2, NULL),
+    // ICH10D
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3, NULL),
+
     PCI_DEVICE_END,
 };
 
@@ -678,7 +687,7 @@ acpi_setup(void)
 
     dprintf(3, "init ACPI tables\n");
 
-    // This code is hardcoded for PIIX4 Power Management device.
+    // This code is hardcoded for PIIX4/ICH10 Power Management device.
     struct pci_device *pci = pci_find_init_device(acpi_find_tbl, NULL);
     if (!pci)
         // Device not found
