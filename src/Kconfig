@@ -434,3 +434,11 @@ menu "Debugging"
             IO space.
 
 endmenu
+menu "Simics"
+    config USE_CMOS_BIOS_SMP_COUNT
+        bool "Use Cmos BIOS SMP Count"
+        default y
+        help
+            If disabled, wait 10ms instead of relying on the CPU count
+            stored in memory.
+endmenu

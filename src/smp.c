@@ -128,9 +128,13 @@ smp_setup(void)
     writel(APIC_ICR_LOW, 0x000C4600 | sipi_vector);
 
     // Wait for other CPUs to process the SIPI.
-    u8 cmos_smp_count = inb_cmos(CMOS_BIOS_SMP_COUNT);
-    while (cmos_smp_count + 1 != readl(&CountCPUs))
-        yield();
+    if (!CONFIG_USE_CMOS_BIOS_SMP_COUNT) {
+        msleep(10);
+    } else {
+        u8 cmos_smp_count = inb_cmos(CMOS_BIOS_SMP_COUNT);
+        while (cmos_smp_count + 1 != readl(&CountCPUs))
+            yield();
+    }
 
     // Restore memory.
     *(u64*)BUILD_AP_BOOT_ADDR = old;
