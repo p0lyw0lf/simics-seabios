@@ -15,7 +15,7 @@
 #include "vgabios.h" // handle_104f
 #include "vgahw.h" // vgahw_set_mode
 
-u32 VBE_total_memory VAR16 = 256 * 1024;
+u32 VBE_total_memory VAR16 = 16 * 1024 * 1024;
 u32 VBE_capabilities VAR16;
 u32 VBE_framebuffer VAR16;
 u16 VBE_win_granularity VAR16;
