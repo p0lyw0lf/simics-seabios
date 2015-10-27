@@ -21,7 +21,7 @@
 #define VBE_PRODUCT_STRING "SeaBIOS VBE Adapter"
 #define VBE_REVISION_STRING "Rev. 1"
 
-u32 VBE_total_memory VAR16 = 256 * 1024;
+u32 VBE_total_memory VAR16 = 16 * 1024 * 1024;
 u32 VBE_capabilities VAR16;
 u32 VBE_framebuffer VAR16;
 u16 VBE_win_granularity VAR16;
