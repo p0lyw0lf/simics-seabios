@@ -31,6 +31,11 @@ DefinitionBlock (
 
 #include "acpi-dsdt-dbug.dsl"
 
+    Name (\GPIC, 0x00)
+    Method (\_PIC, 1, NotSerialized)
+    {
+        Store (Arg0, GPIC)
+    }
 
 /****************************************************************
  * PCI Bus definition
@@ -81,16 +86,15 @@ DefinitionBlock (
 
 
 /****************************************************************
- * PIIX3 ISA bridge
+ * ICH10 LPC ISA bridge
  ****************************************************************/
 
     Scope(\_SB.PCI0) {
         Device(ISA) {
-            Name(_ADR, 0x00010000)
+            Name(_ADR, 0x001F0000)
 
-            /* PIIX PCI to ISA irq remapping */
-            OperationRegion(P40C, PCI_Config, 0x60, 0x04)
-
+            /* PCI to ISA irq remapping */
+            OperationRegion(P40C, PCI_Config, 0x60, 0x0C)
             /* enable bits */
             Field(\_SB.PCI0.PX13.P13C, AnyAcc, NoLock, Preserve) {
                 Offset(0x5f),
@@ -158,201 +162,16 @@ DefinitionBlock (
  ****************************************************************/
 
     Scope(\_SB) {
-        Scope(PCI0) {
-			Name(_PRT, Package() {
-				// Slot 1
-				Package() {0x0001FFFF, 0, 0, 0xa},
-				Package() {0x0001FFFF, 1, 0, 0xa},
-				Package() {0x0001FFFF, 2, 0, 0xb},
-				Package() {0x0001FFFF, 3, 0, 0xb},
-
-				// Slot 2
-				Package() {0x0002FFFF, 0, 0, 0xa},
-				Package() {0x0002FFFF, 1, 0, 0xa},
-				Package() {0x0002FFFF, 2, 0, 0xb},
-				Package() {0x0002FFFF, 3, 0, 0xb},
-
-				// Slot 3
-				Package() {0x0003FFFF, 0, 0, 0xa},
-				Package() {0x0003FFFF, 1, 0, 0xa},
-				Package() {0x0003FFFF, 2, 0, 0xb},
-				Package() {0x0003FFFF, 3, 0, 0xb},
-
-				// Slot 4
-				Package() {0x0004FFFF, 0, 0, 0xa},
-				Package() {0x0004FFFF, 1, 0, 0xa},
-				Package() {0x0004FFFF, 2, 0, 0xb},
-				Package() {0x0004FFFF, 3, 0, 0xb},
-
-				// Slot 5
-				Package() {0x0005FFFF, 0, 0, 0xa},
-				Package() {0x0005FFFF, 1, 0, 0xa},
-				Package() {0x0005FFFF, 2, 0, 0xb},
-				Package() {0x0005FFFF, 3, 0, 0xb},
-
-				// Slot 6
-				Package() {0x0006FFFF, 0, 0, 0xa},
-				Package() {0x0006FFFF, 1, 0, 0xa},
-				Package() {0x0006FFFF, 2, 0, 0xb},
-				Package() {0x0006FFFF, 3, 0, 0xb},
-
-				// Slot 7
-				Package() {0x0007FFFF, 0, 0, 0xa},
-				Package() {0x0007FFFF, 1, 0, 0xa},
-				Package() {0x0007FFFF, 2, 0, 0xb},
-				Package() {0x0007FFFF, 3, 0, 0xb},
-
-				// Slot 8
-				Package() {0x0008FFFF, 0, 0, 0xa},
-				Package() {0x0008FFFF, 1, 0, 0xa},
-				Package() {0x0008FFFF, 2, 0, 0xb},
-				Package() {0x0008FFFF, 3, 0, 0xb},
-
-				// Slot 9
-				Package() {0x0009FFFF, 0, 0, 0xa},
-				Package() {0x0009FFFF, 1, 0, 0xa},
-				Package() {0x0009FFFF, 2, 0, 0xb},
-				Package() {0x0009FFFF, 3, 0, 0xb},
-
-				// Slot 10
-				Package() {0x000AFFFF, 0, 0, 0xa},
-				Package() {0x000AFFFF, 1, 0, 0xa},
-				Package() {0x000AFFFF, 2, 0, 0xb},
-				Package() {0x000AFFFF, 3, 0, 0xb},
-
-				// Slot 11
-				Package() {0x000BFFFF, 0, 0, 0xa},
-				Package() {0x000BFFFF, 1, 0, 0xa},
-				Package() {0x000BFFFF, 2, 0, 0xb},
-				Package() {0x000BFFFF, 3, 0, 0xb},
-
-				// Slot 12
-				Package() {0x000CFFFF, 0, 0, 0xa},
-				Package() {0x000CFFFF, 1, 0, 0xa},
-				Package() {0x000CFFFF, 2, 0, 0xb},
-				Package() {0x000CFFFF, 3, 0, 0xb},
-
-				// Slot 13
-				Package() {0x000DFFFF, 0, 0, 0xa},
-				Package() {0x000DFFFF, 1, 0, 0xa},
-				Package() {0x000DFFFF, 2, 0, 0xb},
-				Package() {0x000DFFFF, 3, 0, 0xb},
-
-				// Slot 14
-				Package() {0x000EFFFF, 0, 0, 0xa},
-				Package() {0x000EFFFF, 1, 0, 0xa},
-				Package() {0x000EFFFF, 2, 0, 0xb},
-				Package() {0x000EFFFF, 3, 0, 0xb},
-
-				// Slot 15
-				Package() {0x000FFFFF, 0, 0, 0xa},
-				Package() {0x000FFFFF, 1, 0, 0xa},
-				Package() {0x000FFFFF, 2, 0, 0xb},
-				Package() {0x000FFFFF, 3, 0, 0xb},
-
-				// Slot 16
-				Package() {0x0010FFFF, 0, 0, 0xa},
-				Package() {0x0010FFFF, 1, 0, 0xa},
-				Package() {0x0010FFFF, 2, 0, 0xb},
-				Package() {0x0010FFFF, 3, 0, 0xb},
-
-				// Slot 17
-				Package() {0x0011FFFF, 0, 0, 0xa},
-				Package() {0x0011FFFF, 1, 0, 0xa},
-				Package() {0x0011FFFF, 2, 0, 0xb},
-				Package() {0x0011FFFF, 3, 0, 0xb},
-
-				// Slot 18
-				Package() {0x0012FFFF, 0, 0, 0xa},
-				Package() {0x0012FFFF, 1, 0, 0xa},
-				Package() {0x0012FFFF, 2, 0, 0xb},
-				Package() {0x0012FFFF, 3, 0, 0xb},
-
-				// Slot 19
-				Package() {0x0013FFFF, 0, 0, 0xa},
-				Package() {0x0013FFFF, 1, 0, 0xa},
-				Package() {0x0013FFFF, 2, 0, 0xb},
-				Package() {0x0013FFFF, 3, 0, 0xb},
-
-				// Slot 20
-				Package() {0x0014FFFF, 0, 0, 0xa},
-				Package() {0x0014FFFF, 1, 0, 0xa},
-				Package() {0x0014FFFF, 2, 0, 0xb},
-				Package() {0x0014FFFF, 3, 0, 0xb},
-
-				// Slot 21
-				Package() {0x0015FFFF, 0, 0, 0xa},
-				Package() {0x0015FFFF, 1, 0, 0xa},
-				Package() {0x0015FFFF, 2, 0, 0xb},
-				Package() {0x0015FFFF, 3, 0, 0xb},
-
-				// Slot 22
-				Package() {0x0016FFFF, 0, 0, 0xa},
-				Package() {0x0016FFFF, 1, 0, 0xa},
-				Package() {0x0016FFFF, 2, 0, 0xb},
-				Package() {0x0016FFFF, 3, 0, 0xb},
-
-				// Slot 23
-				Package() {0x0017FFFF, 0, 0, 0xa},
-				Package() {0x0017FFFF, 1, 0, 0xa},
-				Package() {0x0017FFFF, 2, 0, 0xb},
-				Package() {0x0017FFFF, 3, 0, 0xb},
-
-				// Slot 24
-				Package() {0x0018FFFF, 0, 0, 0xa},
-				Package() {0x0018FFFF, 1, 0, 0xa},
-				Package() {0x0018FFFF, 2, 0, 0xb},
-				Package() {0x0018FFFF, 3, 0, 0xb},
-
-				// Slot 25
-				Package() {0x0019FFFF, 0, 0, 0xa},
-				Package() {0x0019FFFF, 1, 0, 0xa},
-				Package() {0x0019FFFF, 2, 0, 0xb},
-				Package() {0x0019FFFF, 3, 0, 0xb},
-
-				// Slot 26
-				Package() {0x001AFFFF, 0, 0, 0xa},
-				Package() {0x001AFFFF, 1, 0, 0xa},
-				Package() {0x001AFFFF, 2, 0, 0xb},
-				Package() {0x001AFFFF, 3, 0, 0xb},
-
-				// Slot 27
-				Package() {0x001BFFFF, 0, 0, 0xa},
-				Package() {0x001BFFFF, 1, 0, 0xa},
-				Package() {0x001BFFFF, 2, 0, 0xb},
-				Package() {0x001BFFFF, 3, 0, 0xb},
-
-				// Slot 28
-				Package() {0x001CFFFF, 0, 0, 0xa},
-				Package() {0x001CFFFF, 1, 0, 0xa},
-				Package() {0x001CFFFF, 2, 0, 0xb},
-				Package() {0x001CFFFF, 3, 0, 0xb},
-
-				// Slot 29
-				Package() {0x001DFFFF, 0, 0, 0xa},
-				Package() {0x001DFFFF, 1, 0, 0xa},
-				Package() {0x001DFFFF, 2, 0, 0xb},
-				Package() {0x001DFFFF, 3, 0, 0xb},
-
-				// Slot 30
-				Package() {0x001EFFFF, 0, 0, 0xa},
-				Package() {0x001EFFFF, 1, 0, 0xa},
-				Package() {0x001EFFFF, 2, 0, 0xb},
-				Package() {0x001EFFFF, 3, 0, 0xb},
-
-				// Slot 31
-				Package() {0x001FFFFF, 0, 0, 0xa},
-				Package() {0x001FFFFF, 1, 0, 0xa},
-				Package() {0x001FFFFF, 2, 0, 0xb},
-				Package() {0x001FFFFF, 3, 0, 0xb}
-			})
-        }
-
-        Field(PCI0.ISA.P40C, ByteAcc, NoLock, Preserve) {
-            PRQ0,   8,
-            PRQ1,   8,
-            PRQ2,   8,
-            PRQ3,   8
+        Field (\_SB.PCI0.ISA.P40C, ByteAcc, NoLock, Preserve) {
+            PRQ0,   8, 
+            PRQ1,   8, 
+            PRQ2,   8, 
+            PRQ3,   8, 
+            Offset (0x08), 
+            PIRE,   8, 
+            PIRF,   8, 
+            PIRG,   8, 
+            PIRH,   8
         }
 
         Method(IQST, 1, NotSerialized) {
@@ -398,11 +217,162 @@ DefinitionBlock (
             }                                                   \
         }
 
+#define A_ROUTE(v, p0, p1, p2, p3)                      \
+        Package () {v##ffff, 0x00, 0x00, p0 },          \
+        Package () {v##ffff, 0x01, 0x00, p1 },          \
+        Package () {v##ffff, 0x02, 0x00, p2 },          \
+        Package () {v##ffff, 0x03, 0x00, p3 },
+
+#define P_ROUTE(v, l0, l1, l2, l3)                      \
+        Package () {v##ffff, 0x00, l0, 0x00 },          \
+        Package () {v##ffff, 0x01, l1, 0x00 },          \
+        Package () {v##ffff, 0x02, l2, 0x00 },          \
+        Package () {v##ffff, 0x03, l3, 0x00 },
+
+#define PIRQ_A  16
+#define PIRQ_B  17
+#define PIRQ_C  18
+#define PIRQ_D  19
+#define PIRQ_E  20
+#define PIRQ_F  21
+#define PIRQ_G  22
+#define PIRQ_H  23
+
+        /* buffer used to return current setting */
+        Name (IRET, ResourceTemplate () {
+            IRQ (Level, ActiveLow, Shared, )
+                {0}
+        })
+        CreateWordField (IRET, One, IRQV)
+
+        /* valid PCI IRQ targets */
+        Name (PRSx, ResourceTemplate () {
+            IRQ (Level, ActiveLow, Shared, )
+                {9, 10, 11}
+        })
+
+        /* links */
         define_link(LNKA, 0, PRQ0)
         define_link(LNKB, 1, PRQ1)
         define_link(LNKC, 2, PRQ2)
         define_link(LNKD, 3, PRQ3)
 
+        //LINK(LNKE, 5, PIRE, PRSx)
+        //LINK(LNKF, 6, PIRF, PRSx)
+        //LINK(LNKG, 7, PIRG, PRSx)
+        //LINK(LNKH, 8, PIRH, PRSx)
+
+        /* legacy IRQ routing */
+        Name (PR00, Package ()
+        {
+            // DMI, PCI_E port 1-10
+            P_ROUTE(0x0000, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0001, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0002, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0003, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0004, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0005, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0006, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0007, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0008, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0009, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x000a, LNKA, LNKB, LNKC, LNKD)
+
+            // unused slots
+            P_ROUTE(0x000b, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x000c, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x000d, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x000e, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x000f, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0010, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0011, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0012, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0013, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0014, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0015, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0016, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0017, LNKA, LNKB, LNKC, LNKD)
+            P_ROUTE(0x0018, LNKA, LNKB, LNKC, LNKD)
+
+            P_ROUTE(0x001E, LNKA, LNKB, LNKC, LNKD)
+            
+            // D25: GbE LAN
+            P_ROUTE(0x0019, LNKA, LNKB, LNKC, LNKD)
+
+            // D26: EHCI #2, UHCI #6,#5,#4
+            P_ROUTE(0x001A, LNKA, LNKB, LNKC, LNKD)
+
+            // D27: Audio
+            P_ROUTE(0x001B, LNKA, LNKB, LNKC, LNKD)
+
+            // D28: port1-6
+            P_ROUTE(0x001C, LNKA, LNKB, LNKC, LNKD)
+
+            // D29: EHCI, UCHI #6,#3,#2,#1
+            P_ROUTE(0x001D, LNKA, LNKB, LNKC, LNKD)
+
+            // D31: SATA1,2 SMBus, Thermal Throttle
+            P_ROUTE(0x001F, LNKA, LNKB, LNKC, LNKD)
+        })
+        Name (AR00, Package ()
+        {
+            // DMI, PCI_E port 1-10
+            A_ROUTE(0x0000, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0001, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0002, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0003, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0004, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0005, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0006, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0007, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0008, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0009, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x000a, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+
+            // unused slots
+            A_ROUTE(0x000b, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x000c, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x000d, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x000e, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x000f, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0010, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0011, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0012, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0013, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0014, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0015, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0016, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0017, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            A_ROUTE(0x0018, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+
+            A_ROUTE(0x001E, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+            
+            // D25: GbE LAN
+            A_ROUTE(0x0019, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+
+            // D26: EHCI #2, UHCI #6,#5,#4
+            A_ROUTE(0x001A, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+
+            // D27: Audio
+            A_ROUTE(0x001B, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+
+            // D28: port1-6
+            A_ROUTE(0x001C, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+
+            // D29: EHCI, UCHI #6,#3,#2,#1
+            A_ROUTE(0x001D, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+
+            // D31: SATA1,2 SMBus, Thermal Throttle
+            A_ROUTE(0x001F, PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D)
+        })
+        Scope(\_SB.PCI0) {
+            Method (_PRT, 0, NotSerialized) {
+                If (GPIC) { 
+                    Return (AR00)
+                }
+                Return (PR00)
+            }
+        }
     }
 
 
