@@ -968,6 +968,33 @@ static void pci_bios_map_devices(struct pci_bus *busses)
     }
 }
 
+static void
+setup_pci_mcfg(void)
+{
+#ifdef CONFIG_MCFG
+    // setup MCFG for all cpu sockets
+    int found = 0;
+    unsigned bus = 0xff;
+    for (bus = 0xff; bus > 0x10; bus--) {
+        u32 v = pci_config_readl((bus << 8) | 0x00, 0x0);
+        if (v != 0x2c418086)
+            continue;
+        v = pci_config_readl((bus << 8) | 0x01, 0x0);
+        if (v != 0x2c018086)
+            continue;
+
+        u32 sbits = (BUILD_MCFG_SIZE == 0x10000000) ? 0 :
+            (BUILD_MCFG_SIZE == 0x8000000) ? 7 :
+            (BUILD_MCFG_SIZE == 0x4000000) ? 6 : 0;
+
+        pci_config_writel((bus << 8) | 0x01, 0x50,
+                          BUILD_MCFG_START | (sbits << 1) | 1);
+        found = 1;
+    }
+    if (found)
+        pci_register_MCFG(BUILD_MCFG_START, BUILD_MCFG_SIZE);
+#endif
+}
 
 /****************************************************************
  * Main setup code
@@ -980,6 +1007,11 @@ pci_setup(void)
         return;
 
     dprintf(3, "pci setup\n");
+
+    setup_pci_mcfg();
+
+    u32 start = BUILD_PCIMEM_START;
+    u32 end   = BUILD_PCIMEM_END;
 
     dprintf(1, "=== PCI bus & bridge init ===\n");
     if (pci_probe_host() != 0) {
