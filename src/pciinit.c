@@ -141,6 +141,27 @@ static int mch_pci_slot_get_irq(struct pci_device *pci, int pin)
     return irq;
 }
 
+static struct pci_region_entry *
+pci_region_create_entry(struct pci_bus *bus, struct pci_device *dev,
+                        int bar, u64 size, u64 align, int type, int is64);
+static struct pci_bus *pci_busses;
+
+static void ich10_lpc_rcba(struct pci_device *pci, void *arg)
+{
+        struct pci_bus *bus = &pci_busses[pci->rootbus];
+        u16 bdf = pci->bdf;
+        u32 rcba;
+        int type = PCI_REGION_TYPE_PREFMEM;
+        int bar = -1; // TODO
+        int is64 = 1; // TODO
+        pci_region_create_entry(bus, pci, bar, 0x4000, 0x4000, type, is64);
+        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
+        rcba = bus->r[type].base;
+        pci_config_writel(bdf, 0xf0 /* RCBA */, rcba | 0x1);
+        dprintf(1, "Mapping RCBA at 0x%x and enabling HPET\n", (u32)rcba);
+        pci_writel(rcba + 0x3404, 0x80);
+}
+
 /* PIIX3/PIIX4 PCI to ISA bridge */
 static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
 {
@@ -159,6 +180,13 @@ static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
     outb(elcr[0], 0x4d0);
     outb(elcr[1], 0x4d1);
     dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n", elcr[0], elcr[1]);
+ }
+
+static void ich10_isa_brigde_init_and_hpet_enable(struct pci_device *pci,
+                                                  void *arg)
+{
+    piix_isa_bridge_setup(pci, arg);
+    ich10_lpc_rcba(pci, arg);
 }
 
 /* ICH9 LPC PCI to ISA bridge */
@@ -284,7 +312,7 @@ static const struct pci_device_id pci_device_tbl[] = {
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
-               piix_isa_bridge_setup),
+               ich10_isa_brigde_init_and_hpet_enable),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2,
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
@@ -884,8 +912,11 @@ pci_setup(void)
     dprintf(1, "=== PCI new allocation pass #2 ===\n");
     pci_bios_map_devices(busses);
 
+    pci_busses = busses;
+    
     pci_bios_init_devices();
 
+    pci_busses = NULL;
     free(busses);
 
     pci_enable_default_vga();
