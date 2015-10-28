@@ -87,6 +87,10 @@ pci_set_io_region_addr(struct pci_device *pci, int bar, u64 addr, int is64)
 
 /* host irqs corresponding to PCI irqs A-D */
 const u8 pci_irqs[4] = {
+    0x10, 0x11, 0x12, 0x13    
+};
+
+const u8 pci_irqs_isa[4] = {
     10, 10, 11, 11
 };
 
@@ -143,7 +147,7 @@ static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
     elcr[0] = 0x00;
     elcr[1] = 0x00;
     for (i = 0; i < 4; i++) {
-        irq = pci_irqs[i];
+        irq = pci_irqs_isa[i];
         /* set to trigger level */
         elcr[irq >> 3] |= (1 << (irq & 7));
         /* activate irq remapping in PIIX */
