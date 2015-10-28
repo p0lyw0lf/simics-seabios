@@ -37,7 +37,7 @@ endchoice
     config XEN
         depends on QEMU
         bool "Support Xen HVM"
-        default y
+        default n
         help
             Configure to be used by xen hvmloader, for a HVM guest.
 
