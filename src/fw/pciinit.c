@@ -291,6 +291,19 @@ static void ich10_pm_init(struct pci_device *pci, void *arg)
     pci_config_writeb(bdf, 0x44, 0x80); // ACPI enabled, SCI IRQ 9
 }
 
+static void x58_vtd_init(struct pci_device *pci, void *arg)
+{
+    u16 bdf = pci->bdf;
+
+    /* Find VTBAR */
+    u32 vtbar = pci_config_readl(bdf, 0x180) & ~0xfff;
+
+    /* Clear the VT-d translation enable bit */
+    u32 gcmd_addr = vtbar + 0x18;
+    u32 gcmd = *(u32 *)gcmd_addr;
+    *(u32 *)gcmd_addr = gcmd & 0x7fffffff;
+}
+
 static const struct pci_device_id pci_device_tbl[] = {
     /* PIIX3/PIIX4 PCI to ISA bridge */
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_0,
@@ -343,6 +356,8 @@ static const struct pci_device_id pci_device_tbl[] = {
                ich10_pm_init),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
                ich10_pm_init),
+
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x342e, x58_vtd_init),
 
     /* X58 PCI-Express 5520 ports */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_X58_PCIE_1,
