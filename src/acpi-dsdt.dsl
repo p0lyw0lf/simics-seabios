@@ -54,9 +54,10 @@ DefinitionBlock (
         }
 
         Device(PCI0) {
-            Name(_HID, EisaId("PNP0A03"))
-            Name(_ADR, 0x00)
-            Name(_UID, 1)
+            Name (_HID, EisaId ("PNP0A08"))
+            Name (_CID, EisaId ("PNP0A03"))
+            Name (_ADR, 0x00)
+            Name (_UID, 1)
         }
     }
 
