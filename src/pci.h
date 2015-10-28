@@ -5,8 +5,9 @@
 #include "list.h" // hlist_node
 
 #define PCI_ROM_SLOT 6
-#define PCI_NUM_REGIONS 7
+#define PCI_NUM_REGIONS 8
 #define PCI_BRIDGE_NUM_REGIONS 2
+#define PCI_SPECIAL_SLOT 7
 
 static inline u8 pci_bdf_to_bus(u16 bdf) {
     return bdf >> 8;

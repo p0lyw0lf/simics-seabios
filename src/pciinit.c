@@ -65,8 +65,20 @@ struct pci_bus {
 
 static u32 pci_bar(struct pci_device *pci, int region_num)
 {
-    if (region_num != PCI_ROM_SLOT) {
+    if ((region_num != PCI_ROM_SLOT) && (region_num != PCI_SPECIAL_SLOT)) {
         return PCI_BASE_ADDRESS_0 + region_num * 4;
+    }
+
+    if (region_num == PCI_SPECIAL_SLOT) {
+        u32 devid = pci_config_readw(pci->bdf, PCI_DEVICE_ID);
+        if (devid == PCI_DEVICE_ID_INTEL_ICH10_1) {
+            dprintf(1, "Mapping LPC RCBA\n");
+            return 0xf0;
+        } else if (devid == 0x342e) {
+            dprintf(1, "Mapping VTBAR\n");
+            return 0x180;
+        } else
+            return 0;
     }
 
 #define PCI_HEADER_TYPE_MULTI_FUNCTION 0x80
@@ -78,6 +90,8 @@ static void
 pci_set_io_region_addr(struct pci_device *pci, int bar, u64 addr, int is64)
 {
     u32 ofs = pci_bar(pci, bar);
+    if (bar == PCI_SPECIAL_SLOT)
+            addr |= 1; /* Enable BAR */
     pci_config_writel(pci->bdf, ofs, addr);
     if (is64)
         pci_config_writel(pci->bdf, ofs + 4, addr >> 32);
@@ -145,37 +159,12 @@ static int mch_pci_slot_get_irq(struct pci_device *pci, int pin)
     return irq;
 }
 
-static void ich10_map_vtbar(struct pci_device *pci, void *arg)
+static void ich10_enable_hpet(struct pci_device *pci, void *arg)
 {
-        struct pci_bus *bus = &busses[pci->rootbus];
-        u16 bdf = pci->bdf;
-        u32 addr;
-        int type = PCI_REGION_TYPE_PREFMEM;
-        pci_bios_bus_reserve(bus, type, 0x4000);
-        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
-        addr = bus->r[type].base;
-        pci_config_writel(bdf, 0x180, addr | 1);
-        dprintf(1, "Mapping VTBAR at 0x%x\n", addr);
-}
-
-static struct pci_region_entry *
-pci_region_create_entry(struct pci_bus *bus, struct pci_device *dev,
-                        int bar, u64 size, u64 align, int type, int is64);
-static struct pci_bus *pci_busses;
-
-static void ich10_lpc_rcba(struct pci_device *pci, void *arg)
-{
-        struct pci_bus *bus = &pci_busses[pci->rootbus];
         u16 bdf = pci->bdf;
         u32 rcba;
-        int type = PCI_REGION_TYPE_PREFMEM;
-        int bar = -1; // TODO
-        int is64 = 1; // TODO
-        pci_region_create_entry(bus, pci, bar, 0x4000, 0x4000, type, is64);
-        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
-        rcba = bus->r[type].base;
-        pci_config_writel(bdf, 0xf0 /* RCBA */, rcba | 0x1);
-        dprintf(1, "Mapping RCBA at 0x%x and enabling HPET\n", (u32)rcba);
+        rcba = pci_config_readl(bdf, 0xf0 /* RCBA */) & 0xfffffffe;
+        dprintf(1, "Enabling HPET\n");
         pci_writel(rcba + 0x3404, 0x80);
 }
 
@@ -203,7 +192,7 @@ static void ich10_isa_brigde_init_and_hpet_enable(struct pci_device *pci,
                                                   void *arg)
 {
     piix_isa_bridge_setup(pci, arg);
-    ich10_lpc_rcba(pci, arg);
+    ich10_enable_hpet(pci, arg);
 }
 
 /* ICH9 LPC PCI to ISA bridge */
@@ -358,7 +347,6 @@ static const struct pci_device_id pci_device_tbl[] = {
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
                piix_isa_bridge_setup),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x342e, ich10_map_vtbar),
 
     /* STORAGE IDE */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_SATA,
@@ -445,7 +433,7 @@ static void pci_bios_init_device(struct pci_device *pci)
                 irq += pci_bdf_to_dev(bdf) & 0x3;
         irq &= 3;
 
-        pic_irq = pci_irqs[irq];
+        int pic_irq = pci_irqs[irq];
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pic_irq);
     }
 
@@ -635,6 +623,24 @@ static void
 pci_bios_get_bar(struct pci_device *pci, int bar,
                  int *ptype, u64 *psize, int *pis64)
 {
+    *pis64 = 0;
+    if (bar == PCI_SPECIAL_SLOT) {
+        u32 devid = pci_config_readw(pci->bdf, PCI_DEVICE_ID);
+        if (devid == PCI_DEVICE_ID_INTEL_ICH10_1) {
+            dprintf(1, "Mapping LPC RCBA\n");
+            *psize = 0x4000;
+            *ptype = 0xffffc000;
+        } else if (devid == 0x342e) {
+            dprintf(1, "Mapping VTBAR\n");
+            *psize = 0x2000;
+            *ptype = 0xffffe000;
+        } else {
+            dprintf(1, "Trying to map unknown special slot!\n");
+            *psize = 0;
+            *ptype = 0;
+        }
+        return;
+    }
     u32 ofs = pci_bar(pci, bar);
     u16 bdf = pci->bdf;
     u32 old = pci_config_readl(bdf, ofs);
@@ -769,6 +775,15 @@ static int pci_bios_check_devices(struct pci_bus *busses)
         struct pci_bus *bus = &busses[pci_bdf_to_bus(pci->bdf)];
         int i;
         for (i = 0; i < PCI_NUM_REGIONS; i++) {
+            if (i == PCI_SPECIAL_SLOT) {
+            	if ((pci->vendor != PCI_VENDOR_ID_INTEL)
+                	|| ((pci->device != PCI_DEVICE_ID_INTEL_ICH10_1)
+                    && (pci->device != 0x342e))) {
+                		continue;
+            	} else
+                	dprintf(1, "PCI special slot\n");
+        	}
+
             if ((pci->class == PCI_CLASS_BRIDGE_PCI) &&
                 (i >= PCI_BRIDGE_NUM_REGIONS && i < PCI_ROM_SLOT))
                 continue;
@@ -1007,9 +1022,6 @@ pci_setup(void)
 
     setup_pci_mcfg();
 
-    u32 start = BUILD_PCIMEM_START;
-    u32 end   = BUILD_PCIMEM_END;
-
     dprintf(1, "=== PCI bus & bridge init ===\n");
     if (pci_probe_host() != 0) {
         return;
@@ -1035,11 +1047,8 @@ pci_setup(void)
     dprintf(1, "=== PCI new allocation pass #2 ===\n");
     pci_bios_map_devices(busses);
 
-    pci_busses = busses;
-    
     pci_bios_init_devices();
 
-    pci_busses = NULL;
     free(busses);
 
     pci_enable_default_vga();
