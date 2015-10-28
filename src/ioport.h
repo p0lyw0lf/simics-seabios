@@ -56,7 +56,7 @@
 #define PORT_BIOS_DEBUG        0x0402
 #define PORT_QEMU_CFG_CTL      0x0510
 #define PORT_QEMU_CFG_DATA     0x0511
-#define PORT_ACPI_PM_BASE      0xb000
+#define PORT_ACPI_PM_BASE      0xc000
 #define PORT_SMB_BASE          0xb100
 #define PORT_BIOS_APM          0x8900
 

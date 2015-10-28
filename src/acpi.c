@@ -206,6 +206,9 @@ static const struct pci_device_id fadt_init_tbl[] = {
                ich9_lpc_fadt_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_0,
                piix4_virtutech_fadt_init),
+    // ICH9R
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_7,
+               ich10_fadt_init),
     // ICH10D0
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                ich10_fadt_init),
