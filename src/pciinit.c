@@ -158,6 +158,27 @@ static void ich10_map_vtbar(struct pci_device *pci, void *arg)
         dprintf(1, "Mapping VTBAR at 0x%x\n", addr);
 }
 
+static struct pci_region_entry *
+pci_region_create_entry(struct pci_bus *bus, struct pci_device *dev,
+                        int bar, u64 size, u64 align, int type, int is64);
+static struct pci_bus *pci_busses;
+
+static void ich10_lpc_rcba(struct pci_device *pci, void *arg)
+{
+        struct pci_bus *bus = &pci_busses[pci->rootbus];
+        u16 bdf = pci->bdf;
+        u32 rcba;
+        int type = PCI_REGION_TYPE_PREFMEM;
+        int bar = -1; // TODO
+        int is64 = 1; // TODO
+        pci_region_create_entry(bus, pci, bar, 0x4000, 0x4000, type, is64);
+        bus->r[type].base = ALIGN_DOWN(bus->r[type].base - 0x4000, 0x4000);
+        rcba = bus->r[type].base;
+        pci_config_writel(bdf, 0xf0 /* RCBA */, rcba | 0x1);
+        dprintf(1, "Mapping RCBA at 0x%x and enabling HPET\n", (u32)rcba);
+        pci_writel(rcba + 0x3404, 0x80);
+}
+
 /* PIIX3/PIIX4 PCI to ISA bridge */
 static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
 {
@@ -176,6 +197,13 @@ static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
     outb(elcr[0], 0x4d0);
     outb(elcr[1], 0x4d1);
     dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n", elcr[0], elcr[1]);
+ }
+
+static void ich10_isa_brigde_init_and_hpet_enable(struct pci_device *pci,
+                                                  void *arg)
+{
+    piix_isa_bridge_setup(pci, arg);
+    ich10_lpc_rcba(pci, arg);
 }
 
 /* ICH9 LPC PCI to ISA bridge */
@@ -325,7 +353,7 @@ static const struct pci_device_id pci_device_tbl[] = {
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
-               piix_isa_bridge_setup),
+               ich10_isa_brigde_init_and_hpet_enable),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2,
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
@@ -404,22 +432,22 @@ static void pci_bios_init_device(struct pci_device *pci)
             , pci_bdf_to_bus(bdf), pci_bdf_to_dev(bdf), pci_bdf_to_fn(bdf)
             , pci->vendor, pci->device);
 
-    int class = pci_config_readw(bdf, PCI_CLASS_DEVICE);
     /* enable memory mappings */
-    if (class != PCI_CLASS_BRIDGE_PCI) {
-            /* TODO-X58: We need to handle PCI-to-PCI bridges in a special
-               way. This should be done similarly to the PCI-to-PCI
-               initialization code in the Virtutech BIOS (search for 'Header
-               type 1. PCI-to-PCI bridge' in rombios.c). This workaround will
-               work as long as all PCI buses expect 0 (the top-level bus in the
-               northbridge) are empty. */
-            pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO
-                             | PCI_COMMAND_MEMORY);
-    }
+    pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+
     /* map the interrupt */
     int pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
-    if (pin != 0)
-        pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pci_slot_get_irq(pci, pin));
+    if (pin != 0) {
+        int irq = pin - 1;
+
+        // Rotate INTx lines as defined in the PCI-to-PCI bridge standard
+        if (pci_bdf_to_bus(bdf) > 0)
+                irq += pci_bdf_to_dev(bdf) & 0x3;
+        irq &= 3;
+
+        pic_irq = pci_irqs[irq];
+        pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pic_irq);
+    }
 
     pci_init_device(pci_device_tbl, pci, NULL);
 
@@ -1007,8 +1035,11 @@ pci_setup(void)
     dprintf(1, "=== PCI new allocation pass #2 ===\n");
     pci_bios_map_devices(busses);
 
+    pci_busses = busses;
+    
     pci_bios_init_devices();
 
+    pci_busses = NULL;
     free(busses);
 
     pci_enable_default_vga();
