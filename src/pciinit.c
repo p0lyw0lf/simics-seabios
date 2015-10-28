@@ -216,6 +216,13 @@ static void apple_macio_init(struct pci_device *pci, void *arg)
     pci_set_io_region_addr(pci->bdf, 0, 0x80800000);
 }
 
+static void intel_82443bx_init(struct pci_device *pci, void *arg)
+{
+        /* 82443BX with AGP_DIS, minimal aperture 4 MB if someone enables it */
+        pci_config_writeb(pci->bdf, 0xb4, 0x3f);
+        /* Do not enable aperture */
+}
+
 static const struct pci_device_id pci_class_tbl[] = {
     /* STORAGE IDE */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_SATA,
@@ -235,6 +242,10 @@ static const struct pci_device_id pci_class_tbl[] = {
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_APPLE, 0x0017, 0xff00, apple_macio_init),
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_APPLE, 0x0022, 0xff00, apple_macio_init),
 
+    /* 82443BX with AGP_DIS */
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82443BX_2,
+                     PCI_ANY_ID, intel_82443bx_init),
+    
     PCI_DEVICE_END,
 };
 
