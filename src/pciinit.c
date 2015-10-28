@@ -744,7 +744,7 @@ static int pci_bios_check_devices(struct pci_bus *busses)
 // Setup region bases (given the regions' size and alignment)
 static int pci_bios_init_root_regions(struct pci_bus *bus)
 {
-    bus->r[PCI_REGION_TYPE_IO].base = 0xc000;
+    bus->r[PCI_REGION_TYPE_IO].base = 0x4000;
 
     struct pci_region *r_end = &bus->r[PCI_REGION_TYPE_PREFMEM];
     struct pci_region *r_start = &bus->r[PCI_REGION_TYPE_MEM];
