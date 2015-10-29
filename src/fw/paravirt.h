@@ -33,5 +33,6 @@ static inline int runningOnKVM(void) {
 void qemu_preinit(void);
 void qemu_platform_setup(void);
 void qemu_cfg_init(void);
+u16 qemu_cfg_get_apic_id(int cpu);
 
 #endif
