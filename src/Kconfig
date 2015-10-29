@@ -79,7 +79,7 @@ endchoice
     config BOOTORDER
         depends on BOOT
         bool "Boot ordering"
-        default y
+        default n
         help
             Support controlling of the boot order via the fw_cfg/CBFS
             "bootorder" file.
@@ -346,7 +346,7 @@ menu "BIOS interfaces"
 
     config S3_RESUME
         bool "S3 resume"
-        default y
+        default n
         help
             Support S3 resume handler.
 
