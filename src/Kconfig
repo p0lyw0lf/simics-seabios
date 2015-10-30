@@ -555,3 +555,11 @@ menu "Debugging"
             thing before booting the OS) writes to the log buffer.
 
 endmenu
+menu "Simics"
+    config VIRTUTECH_PC_SHADOW
+        bool "Virtutech PC Shadow"
+	default y
+        help
+	    Make BIOS area read/writable in Simics
+
+endmenu
