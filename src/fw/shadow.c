@@ -26,6 +26,50 @@ union pamdata_u {
     u32 data32[2];
 };
 
+#if CONFIG_VIRTUTECH_PC_SHADOW
+
+#define Read_Only 1
+#define Write_Only 2
+#define Read_Write 3
+
+static void modify_shadow(unsigned long start, unsigned long len, int mode)
+{
+    int start_loc = ((int)(start >> 10) - 640) >> 1;
+    int len_remaining = len >> 11;
+    int i;
+    for (i = 0; i < len_remaining; i++) {
+        outb(start_loc + i, 0xfff4);
+        if (mode == Read_Only) {
+            outb(1, 0xfff5);
+        } else if (mode == Read_Write) {
+            outb(3, 0xfff5);
+        } else if (mode == Write_Only) {
+            outb(2, 0xfff5);
+        } else {
+            outb(0, 0xfff5);
+        }
+    }
+}
+
+static void
+__copy_bios(void)
+{
+    /* Read (and execute) from PCI, write to RAM */
+    modify_shadow(0xf0000, 0x10000, Write_Only);
+    modify_shadow(0xe0000, 0x10000, Write_Only);
+
+    // Copy bios.
+    memcpy(VSYMBOL(code32flat_start),
+           VSYMBOL(code32flat_start) + BIOS_SRC_OFFSET,
+           SYMBOL(code32flat_end) - SYMBOL(code32flat_start));
+    
+    /* Keep BIOS read/write */
+    modify_shadow(0xf0000, 0x10000, Read_Write);
+    modify_shadow(0xe0000, 0x10000, Read_Write);
+}
+
+#else
+
 // Enable shadowing and copy bios.
 static void
 __make_bios_writable_intel(u16 bdf, u32 pam0)
@@ -113,6 +157,8 @@ make_bios_readonly_intel(u16 bdf, u32 pam0)
 
 static int ShadowBDF = -1;
 
+#endif // CONFIG_VIRTUTECH_PC_SHADOW
+
 // Make the 0xc0000-0x100000 area read/writable.
 void
 make_bios_writable(void)
@@ -121,6 +167,16 @@ make_bios_writable(void)
         return;
 
     dprintf(3, "enabling shadow ram\n");
+
+#if CONFIG_VIRTUTECH_PC_SHADOW
+
+    /* Run the copy from the high address to avoid simulator flushes after each
+       write (the flushes ruin performance) */
+    u32 pos = (u32)__copy_bios + BIOS_SRC_OFFSET;
+    void (*func)(void) = (void*)pos;
+    func();
+
+#else
 
     // At this point, statically allocated variables can't be written,
     // so do this search manually.
@@ -144,6 +200,7 @@ make_bios_writable(void)
         }
     }
     dprintf(1, "Unable to unlock ram - bridge not found\n");
+#endif
 }
 
 // Make the BIOS code segment area (0xf0000) read-only.
@@ -152,8 +209,11 @@ make_bios_readonly(void)
 {
     if (!CONFIG_QEMU || runningOnXen())
         return;
-    dprintf(3, "locking shadow ram\n");
 
+    dprintf(3, "locking shadow ram\n");
+#if CONFIG_VIRTUTECH_PC_SHADOW
+    modify_shadow(0xf0000, 0x10000, Read_Only);
+#else
     if (ShadowBDF < 0) {
         dprintf(1, "Unable to lock ram - bridge not found\n");
         return;
@@ -164,6 +224,7 @@ make_bios_readonly(void)
         make_bios_readonly_intel(ShadowBDF, I440FX_PAM0);
     else
         make_bios_readonly_intel(ShadowBDF, Q35_HOST_BRIDGE_PAM0);
+#endif
 }
 
 void
