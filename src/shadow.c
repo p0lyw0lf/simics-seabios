@@ -50,6 +50,7 @@ __copy_bios(void)
     /* Read (and execute) from PCI, write to RAM */
     modify_shadow(0xf0000, 0x10000, Write_Only);
     modify_shadow(0xe0000, 0x10000, Write_Only);
+    modify_shadow(0xd0000, 0x10000, Write_Only);
 
     // Copy bios.
     extern u8 code32flat_start[], code32flat_end[];
@@ -59,8 +60,7 @@ __copy_bios(void)
     /* Keep BIOS read/write */
     modify_shadow(0xf0000, 0x10000, Read_Write);
     modify_shadow(0xe0000, 0x10000, Read_Write);
-    
-
+    modify_shadow(0xd0000, 0x10000, Read_Write);
 }
 
 #else
