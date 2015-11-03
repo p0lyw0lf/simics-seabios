@@ -49,16 +49,18 @@ __copy_bios(void)
 {
     /* Read (and execute) from PCI, write to RAM */
     modify_shadow(0xf0000, 0x10000, Write_Only);
+    modify_shadow(0xe0000, 0x10000, Write_Only);
 
     // Copy bios.
-//        void *mem = (void*)(BUILD_ROM_START + i * 32*1024);
-        memcpy((void*)BUILD_BIOS_ADDR,
-               (void*)(BIOS_SRC_OFFSET + BUILD_BIOS_ADDR), BUILD_BIOS_SIZE);
-
-//    memcpy((void*)BUILD_BIOS_ADDR, (void*)BIOS_SRC_ADDR, BUILD_BIOS_SIZE);
-
+    extern u8 code32flat_start[], code32flat_end[];
+    memcpy(code32flat_start, code32flat_start + BIOS_SRC_OFFSET
+           , code32flat_end - code32flat_start);
+    
     /* Keep BIOS read/write */
     modify_shadow(0xf0000, 0x10000, Read_Write);
+    modify_shadow(0xe0000, 0x10000, Read_Write);
+    
+
 }
 
 #else
