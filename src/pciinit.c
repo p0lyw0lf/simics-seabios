@@ -629,11 +629,11 @@ pci_bios_get_bar(struct pci_device *pci, int bar,
         if (devid == PCI_DEVICE_ID_INTEL_ICH10_1) {
             dprintf(1, "Mapping LPC RCBA\n");
             *psize = 0x4000;
-            *ptype = 0xffffc000;
+            *ptype = PCI_REGION_TYPE_MEM;
         } else if (devid == 0x342e) {
             dprintf(1, "Mapping VTBAR\n");
             *psize = 0x2000;
-            *ptype = 0xffffe000;
+            *ptype = PCI_REGION_TYPE_MEM;
         } else {
             dprintf(1, "Trying to map unknown special slot!\n");
             *psize = 0;
