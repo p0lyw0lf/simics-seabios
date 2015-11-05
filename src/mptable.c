@@ -10,6 +10,7 @@
 #include "mptable.h" // MPTABLE_SIGNATURE
 #include "pci.h"
 #include "pci_regs.h"
+#include "paravirt.h"
 
 void
 mptable_setup(void)
