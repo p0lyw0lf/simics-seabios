@@ -1,17 +1,21 @@
+Limitations
+-----------
+
+SeaBIOS is open source software with functionality maintained by the
+community. The BIOS is provided in Simics model packages to make the
+models easier to use. The functionality of the BIOS is not guaranteed
+by Wind River.
+
+Build Environment
+-----------------
+
+Versions less than 1.8 requires older build tools. Known good are gcc
+4.4.3 and binutils (e.g. ld, objcopy, objdump etc) 2.20.1.20100303
+
 Compiling SeaBIOS
 -----------------
 
-Unpack the repository:
-
-  tar xzf <path-to-src-misc-seabios>/seabios-simics-source.tar.gz
-
-Switch to the appropriate branch. For the x86-440bx model:
-
-  git checkout x86-440bx
-
-And for the generic Simics bios:
-
-  git checkout simics
+Switch to the appropriate branch, e.g. <version>-x58-ich10 or <version>-440bx.
 
 Recent older versions can be checked out via their tag. Use "git tag"
 to find the list of tags.
@@ -20,7 +24,8 @@ Build:
 
   make
 
-To use the compiled bios, point $bios to <seabios>/out/bios.bin.
+To use the compiled bios, point $bios in the Simics target scripts to
+<seabios>/out/bios.bin
 
 Debugging SeaBIOS
 -----------------
@@ -46,28 +51,16 @@ Developing SeaBIOS
 
 Follow the steps above in "Compiling SeaBIOS" to setup a SeaBIOS git.
 
-Make your modifications in the proper branch.
+Make your modifications in the proper branch. Compile and test it
+by setting the $bios variable in corresponding Simics target
+scripts. This is most easily done in the trampoline target scripts in
+a Simics project.
 
-When you are ready to distribute a new version, first compile it in
-the seabios directory.
-
-NOTE: to build for ATA, you need to run 'make config' first. Remember
-to revert the changes before commiting. The diff between ATA and SATA
-mode should be something like:
-
--# CONFIG_ATA is not set
--CONFIG_AHCI=y
-+CONFIG_ATA=y
-+# CONFIG_ATA_DMA is not set
-+# CONFIG_ATA_PIO32 is not set
-+# CONFIG_AHCI is not set
-
-Copy out/bios.bin to dumps/x86. The name should be
-seabios-simics-<platform>-<sata/ata>-<mainline-short-version>.bin,
-where <mainline-short-version> is the version string from out/version.c up to
-and including the date (skip the time and the build host), <platform> is the
-branch name or "generic" for the simics branch, <sata/ata> indicates the
-configuration used.
+When you are ready to distribute a new version, copy out/bios.bin to
+/home/virtutech/dumps/x86. The name should be
+seabios-simics-<platform>-<mainline-short-version>-<date>.bin, where
+<mainline-short-version> is the version string from the branch name,
+<platform> is the platform part of branch name.
 
 Tag the tree to make it easy to correlate filename with repo commit.
 
@@ -76,6 +69,10 @@ point to the new version.
 
 Update create-links.py to link to the new version.
 
-Update distributions.list to include new version.
+Update relevant package files in config/dist to include new version.
+
+Possibly update Simics tests which depend on the specific BIOS
+binary. Currently this includes t952 and the littrace tests. In Simics
+5 the t83 files needs to be updated to include the BIOS files.
 
 Add a note to RELEASENOTES.seabios.docu in this directory.
