@@ -367,17 +367,8 @@ static void pci_bios_init_device(struct pci_device *pci)
 
     /* map the interrupt */
     int pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
-    if (pin != 0) {
-        int irq = pin - 1;
-
-        // Rotate INTx lines as defined in the PCI-to-PCI bridge standard
-        if (pci_bdf_to_bus(bdf) > 0)
-                irq += pci_bdf_to_dev(bdf) & 0x3;
-        irq &= 3;
-
-        int pic_irq = pci_irqs[irq];
-        pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pic_irq);
-    }
+    if (pin != 0)
+        pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pci_slot_get_irq(pci, pin));
 
     pci_init_device(pci_device_tbl, pci, NULL);
 
