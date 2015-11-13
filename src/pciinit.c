@@ -111,15 +111,20 @@ const u8 pci_irqs_isa[4] = {
     10, 10, 11, 11
 };
 
-static int dummy_pci_slot_get_irq(struct pci_device *pci, int pin)
+static int vt_pci_slot_get_irq(struct pci_device *pci, int pin)
 {
-    dprintf(1, "pci_slot_get_irq called with unknown routing\n");
+        int irq = pin - 1;
 
-    return 0xff; /* PCI defined "unknown" or "no connection" for x86 */
+        // Rotate INTx lines as defined in the PCI-to-PCI bridge standard
+        if (pci_bdf_to_bus(pci->bdf) > 0)
+                irq += pci_bdf_to_dev(pci->bdf) & 0x3;
+        irq &= 3;
+
+        return pci_irqs[irq];
 }
 
 static int (*pci_slot_get_irq)(struct pci_device *pci, int pin) =
-    dummy_pci_slot_get_irq;
+    vt_pci_slot_get_irq;
 
 // Return the global irq number corresponding to a host bus device irq pin.
 static int piix_pci_slot_get_irq(struct pci_device *pci, int pin)
@@ -419,9 +424,6 @@ static void pci_bios_init_device(struct pci_device *pci)
     dprintf(1, "PCI: init bdf=%02x:%02x.%x id=%04x:%04x\n"
             , pci_bdf_to_bus(bdf), pci_bdf_to_dev(bdf), pci_bdf_to_fn(bdf)
             , pci->vendor, pci->device);
-
-    /* enable memory mappings */
-    pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
 
     /* map the interrupt */
     int pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
