@@ -114,6 +114,8 @@ void ich9_lpc_fadt_setup(struct pci_device *dev, void *arg)
 static void piix4_virtutech_fadt_init(struct pci_device *pci, void *arg)
 {
     struct fadt_descriptor_rev1 *fadt = arg;
+    fadt->model = 1;
+    fadt->reserved1 = 0;
     fadt->acpi_enable = VIRTUTECH_ACPI_ENABLE;
     fadt->acpi_disable = VIRTUTECH_ACPI_DISABLE;
     fadt->gpe0_blk = cpu_to_le32(VIRTUTECH_GPE0_BLK);
@@ -122,6 +124,17 @@ static void piix4_virtutech_fadt_init(struct pci_device *pci, void *arg)
     fadt->flags = cpu_to_le32((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6));
     /* Legacy devices and 8042 present */
     fadt->ia32_boot_arch = 3;
+
+    fadt->sci_int = cpu_to_le16(PIIX4_PM_INTRRUPT);
+    fadt->smi_cmd = cpu_to_le32(PORT_SMI_CMD);
+    fadt->pm1a_evt_blk = cpu_to_le32(PORT_ACPI_PM_BASE);
+    fadt->pm1a_cnt_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x04);
+    fadt->pm_tmr_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x08);
+    fadt->pm1_evt_len = 4;
+    fadt->pm1_cnt_len = 2;
+    fadt->pm_tmr_len = 4;
+    fadt->plvl2_lat = cpu_to_le16(0xfff); // C2 state not supported
+    fadt->plvl3_lat = cpu_to_le16(0xfff); // C3 state not supported
 }
 
 
@@ -129,9 +142,15 @@ static void piix4_virtutech_fadt_init(struct pci_device *pci, void *arg)
 #define ICH10_ACPI_DISABLE  0xf1
 #define ICH10_GPE0_BLK      (PORT_ACPI_PM_BASE + 0x20)
 #define ICH10_GPE0_BLK_LEN  16
+
+// Matches setting in ich10_pm_init
+#define ICH10_PM_INTRRUPT       9       // irq 9
+
 static void ich10_fadt_init(struct pci_device *pci, void *arg)
 {
     struct fadt_descriptor_rev1 *fadt = arg;
+    fadt->model = 1;
+    fadt->reserved1 = 0;
     fadt->acpi_enable = ICH10_ACPI_ENABLE;
     fadt->acpi_disable = ICH10_ACPI_DISABLE;
     fadt->gpe0_blk = cpu_to_le32(ICH10_GPE0_BLK);
@@ -140,6 +159,17 @@ static void ich10_fadt_init(struct pci_device *pci, void *arg)
     fadt->flags = cpu_to_le32((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6));
     /* Legacy devices and 8042 present */
     fadt->ia32_boot_arch = 3;
+
+    fadt->sci_int = cpu_to_le16(ICH10_PM_INTRRUPT);
+    fadt->smi_cmd = cpu_to_le32(PORT_SMI_CMD);
+    fadt->pm1a_evt_blk = cpu_to_le32(PORT_ACPI_PM_BASE);
+    fadt->pm1a_cnt_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x04);
+    fadt->pm_tmr_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x08);
+    fadt->pm1_evt_len = 4;
+    fadt->pm1_cnt_len = 2;
+    fadt->pm_tmr_len = 4;
+    fadt->plvl2_lat = cpu_to_le16(0xfff); // C2 state not supported
+    fadt->plvl3_lat = cpu_to_le16(0xfff); // C3 state not supported
 }
 
 static const struct pci_device_id fadt_init_tbl[] = {
