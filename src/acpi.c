@@ -123,8 +123,7 @@ static void piix4_virtutech_fadt_init(struct pci_device *pci, void *arg)
     /* Legacy devices and 8042 present */
     fadt->ia32_boot_arch = 3;
 
-    int pm_sci_int = pci_config_readb(pci->bdf, PCI_INTERRUPT_LINE);
-    fadt->sci_int = cpu_to_le16(pm_sci_int);
+    fadt->sci_int = cpu_to_le16(PIIX4_PM_INTRRUPT);
     fadt->smi_cmd = cpu_to_le32(PORT_SMI_CMD);
     fadt->pm1a_evt_blk = cpu_to_le32(PORT_ACPI_PM_BASE);
     fadt->pm1a_cnt_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x04);
@@ -141,6 +140,10 @@ static void piix4_virtutech_fadt_init(struct pci_device *pci, void *arg)
 #define ICH10_ACPI_DISABLE  0xf1
 #define ICH10_GPE0_BLK      (PORT_ACPI_PM_BASE + 0x20)
 #define ICH10_GPE0_BLK_LEN  16
+
+// Matches setting in ich10_pm_init
+#define ICH10_PM_INTRRUPT       9       // irq 9
+
 static void ich10_fadt_init(struct pci_device *pci, void *arg)
 {
     struct fadt_descriptor_rev1 *fadt = arg;
@@ -155,8 +158,7 @@ static void ich10_fadt_init(struct pci_device *pci, void *arg)
     /* Legacy devices and 8042 present */
     fadt->ia32_boot_arch = 3;
 
-    int pm_sci_int = pci_config_readb(pci->bdf, PCI_INTERRUPT_LINE);
-    fadt->sci_int = cpu_to_le16(pm_sci_int);
+    fadt->sci_int = cpu_to_le16(ICH10_PM_INTRRUPT);
     fadt->smi_cmd = cpu_to_le32(PORT_SMI_CMD);
     fadt->pm1a_evt_blk = cpu_to_le32(PORT_ACPI_PM_BASE);
     fadt->pm1a_cnt_blk = cpu_to_le32(PORT_ACPI_PM_BASE + 0x04);
