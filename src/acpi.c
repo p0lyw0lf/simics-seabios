@@ -46,13 +46,13 @@ build_header(struct acpi_table_header *h, u32 sig, int len, u8 rev)
     h->checksum -= checksum(h, len);
 }
 
+#define PIIX4_PM_INTRRUPT       9       // irq 9
+
 #if 0
 #define PIIX4_ACPI_ENABLE       0xf1
 #define PIIX4_ACPI_DISABLE      0xf0
 #define PIIX4_GPE0_BLK          0xafe0
 #define PIIX4_GPE0_BLK_LEN      4
-
-#define PIIX4_PM_INTRRUPT       9       // irq 9
 
 static void piix4_fadt_setup(struct pci_device *pci, void *arg)
 {
