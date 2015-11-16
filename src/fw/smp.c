@@ -148,19 +148,24 @@ smp_scan(void)
     apic_id_init();
 
     // Wait for other CPUs to process the SIPI.
-    u16 expected_cpus_count = qemu_get_present_cpus_count();
-    while (expected_cpus_count != CountCPUs)
-        asm volatile(
-            // Release lock and allow other processors to use the stack.
-            "  movl %%esp, %1\n"
-            "  movl $0, %0\n"
-            // Reacquire lock and take back ownership of stack.
-            "1:rep ; nop\n"
-            "  lock btsl $0, %0\n"
-            "  jc 1b\n"
-            : "+m" (SMPLock), "+m" (SMPStack)
-            : : "cc", "memory");
-    yield();
+    if (!CONFIG_USE_CMOS_BIOS_SMP_COUNT) {
+            msleep(10);
+    } else {
+            u8 expected_cpus_count = qemu_get_present_cpus_count();
+            while (expected_cpus_count != CountCPUs)
+                    asm volatile(
+                            // Release lock and allow other
+                            // processors to use the stack.
+                            "  movl %%esp, %1\n"
+                            "  movl $0, %0\n"
+                            // Reacquire lock and take back ownership of stack.
+                            "1:rep ; nop\n"
+                            "  lock btsl $0, %0\n"
+                            "  jc 1b\n"
+                            : "+m" (SMPLock), "+m" (SMPStack)
+                            : : "cc", "memory");
+            yield();
+    }
 
     // Restore memory.
     *(u64*)BUILD_AP_BOOT_ADDR = old;
