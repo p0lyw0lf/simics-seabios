@@ -26,14 +26,18 @@ static u32 smp_mtrr_count;
 void
 wrmsr_smp(u32 index, u64 val)
 {
+    unsigned i;
     wrmsr(index, val);
-    if (smp_mtrr_count >= ARRAY_SIZE(smp_mtrr)) {
-        warn_noalloc();
-        return;
-    }
-    smp_mtrr[smp_mtrr_count].index = index;
-    smp_mtrr[smp_mtrr_count].val = val;
-    smp_mtrr_count++;
+    for (i = 0; i < smp_mtrr_count; i++)
+        if (smp_mtrr[i].index == index)
+            break;
+    if (i >= ARRAY_SIZE(smp_mtrr))
+        panic("smp_mtrr table overflow");
+    if (i == smp_mtrr_count)
+        smp_mtrr_count++;
+
+    smp_mtrr[i].index = index;
+    smp_mtrr[i].val = val;
 }
 
 u32 MaxCountCPUs;
