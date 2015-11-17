@@ -37,7 +37,7 @@ endchoice
     config XEN
         depends on QEMU
         bool "Support Xen HVM"
-        default y
+        default n
         help
             Configure to be used by xen hvmloader, for a HVM guest.
 
@@ -68,7 +68,7 @@ endchoice
     config BOOTORDER
         depends on BOOT
         bool "Boot ordering"
-        default y
+        default n
         help
             Support controlling of the boot order via the fw_cfg/CBFS
             "bootorder" file.
@@ -139,7 +139,7 @@ menu "Hardware support"
     config ATA
         depends on DRIVES
         bool "ATA controllers"
-        default y
+        default n
         help
             Support for IDE disk code.
     config ATA_DMA
@@ -392,7 +392,7 @@ menu "BIOS interfaces"
     config OPTIONROMS_DEPLOYED
         depends on OPTIONROMS && QEMU
         bool "Option roms are already at 0xc0000-0xf0000"
-        default n
+        default y
         help
             Select this if option ROMs are already copied to
             0xc0000-0xf0000.  This must only be selected when using
@@ -416,7 +416,7 @@ menu "BIOS interfaces"
     config KBD_CALL_INT15_4F
         depends on KEYBOARD
         bool "Keyboard hook interface"
-        default y
+        default n
         help
             Support calling int155f on each keyboard event.
     config MOUSE
@@ -427,7 +427,7 @@ menu "BIOS interfaces"
 
     config S3_RESUME
         bool "S3 resume"
-        default y
+        default n
         help
             Support S3 resume handler.
 
@@ -563,7 +563,7 @@ menu "Simics"
 	    Make BIOS area read/writable in Simics
     config USE_CMOS_BIOS_SMP_COUNT
         bool "Use Cmos BIOS SMP Count"
-        default y
+        default n
         help
             If disabled, wait 10ms instead of relying on the CPU count
             stored in memory.
