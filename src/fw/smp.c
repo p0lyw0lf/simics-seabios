@@ -20,24 +20,24 @@
 
 #define APIC_ENABLED 0x0100
 
-static struct { u32 index; u64 val; } smp_mtrr[32];
-static u32 smp_mtrr_count;
+struct { u32 index; u64 val; } smp_msr[33];
+u32 smp_msr_count;
 
 void
 wrmsr_smp(u32 index, u64 val)
 {
     unsigned i;
     wrmsr(index, val);
-    for (i = 0; i < smp_mtrr_count; i++)
-        if (smp_mtrr[i].index == index)
+    for (i = 0; i < smp_msr_count; i++)
+        if (smp_msr[i].index == index)
             break;
-    if (i >= ARRAY_SIZE(smp_mtrr))
-        panic("smp_mtrr table overflow");
-    if (i == smp_mtrr_count)
-        smp_mtrr_count++;
+    if (i >= ARRAY_SIZE(smp_msr))
+        panic("smp_msr table overflow");
+    if (i == smp_msr_count)
+        smp_msr_count++;
 
-    smp_mtrr[i].index = index;
-    smp_mtrr[i].val = val;
+    smp_msr[i].index = index;
+    smp_msr[i].val = val;
 }
 
 u32 MaxCountCPUs;
@@ -67,8 +67,8 @@ handle_smp(void)
 
     // MTRR setup
     int i;
-    for (i=0; i<smp_mtrr_count; i++)
-        wrmsr(smp_mtrr[i].index, smp_mtrr[i].val);
+    for (i=0; i<smp_msr_count; i++)
+        wrmsr(smp_msr[i].index, smp_msr[i].val);
 
     // Set bit on FoundAPICIDs
     FoundAPICIDs[apic_id/32] |= (1 << (apic_id % 32));

@@ -104,6 +104,9 @@ void mptable_setup(void);
 // fw/mtrr.c
 void mtrr_setup(void);
 
+// fw/mtrr.c
+void feature_setup(void);
+
 // fw/pciinit.c
 extern const u8 pci_irqs[4];
 void pci_setup(void);
