@@ -625,6 +625,11 @@ ahci_controller_setup(struct pci_device *pci)
     dprintf(2, "AHCI: cap 0x%x, ports_impl 0x%x\n",
             ctrl->caps, ctrl->ports);
 
+    /* Set present ports to enabled */
+    u16 pcs = pci_config_readw(bdf, PCI_PORT_CONTROL_STATUS);
+    pcs = pcs | ((pcs >> 8) & 0x3f);
+    pci_config_writew(bdf, PCI_PORT_CONTROL_STATUS, pcs);
+
     max = 0x1f;
     for (pnr = 0; pnr <= max; pnr++) {
         if (!(ctrl->ports & (1 << pnr)))
