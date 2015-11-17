@@ -227,6 +227,13 @@ static void apple_macio_setup(struct pci_device *pci, void *arg)
     pci_set_io_region_addr(pci, 0, 0x80800000, 0);
 }
 
+static void intel_82443bx_init(struct pci_device *pci, void *arg)
+{
+        /* 82443BX with AGP_DIS, minimal aperture 4 MB if someone enables it */
+        pci_config_writeb(pci->bdf, 0xb4, 0x3f);
+        /* Do not enable aperture */
+}
+
 static void piix4_pm_config_setup(u16 bdf)
 {
     // acpi sci is hardwired to 9
@@ -323,6 +330,10 @@ static const struct pci_device_id pci_device_tbl[] = {
     /* 0xff00 */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_APPLE, 0x0017, 0xff00, apple_macio_setup),
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_APPLE, 0x0022, 0xff00, apple_macio_setup),
+
+    /* 82443BX with AGP_DIS */
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82443BX_2,
+                     PCI_ANY_ID, intel_82443bx_init),
 
     PCI_DEVICE_END,
 };
