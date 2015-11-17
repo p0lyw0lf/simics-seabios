@@ -37,7 +37,7 @@ endchoice
     config XEN
         depends on QEMU
         bool "Support Xen HVM"
-        default y
+        default n
         help
             Configure to be used by xen hvmloader, for a HVM guest.
 
@@ -68,7 +68,7 @@ endchoice
     config BOOTORDER
         depends on BOOT
         bool "Boot ordering"
-        default y
+        default n
         help
             Support controlling of the boot order via the fw_cfg/CBFS
             "bootorder" file.
@@ -145,7 +145,7 @@ menu "Hardware support"
     config ATA_DMA
         depends on ATA
         bool "ATA DMA"
-        default n
+        default y
         help
             Detect and try to use ATA bus mastering DMA controllers.
     config ATA_PIO32
@@ -231,7 +231,7 @@ menu "Hardware support"
 
     config USB
         bool "USB"
-        default y
+        default n
         help
             Support USB devices.
     config USB_UHCI
@@ -392,7 +392,7 @@ menu "BIOS interfaces"
     config OPTIONROMS_DEPLOYED
         depends on OPTIONROMS && QEMU
         bool "Option roms are already at 0xc0000-0xf0000"
-        default n
+        default y
         help
             Select this if option ROMs are already copied to
             0xc0000-0xf0000.  This must only be selected when using
@@ -427,13 +427,13 @@ menu "BIOS interfaces"
 
     config S3_RESUME
         bool "S3 resume"
-        default y
+        default n
         help
             Support S3 resume handler.
 
     config VGAHOOKS
         bool "Hardware specific VGA helpers"
-        default y
+        default n
         help
             Support int 155f BIOS callbacks specific to some Intel and
             VIA on-board vga devices.
@@ -563,18 +563,18 @@ menu "Simics"
 	    Make BIOS area read/writable in Simics
     config USE_CMOS_BIOS_SMP_COUNT
         bool "Use Cmos BIOS SMP Count"
-        default y
+        default n
         help
             If disabled, wait 10ms instead of relying on the CPU count
             stored in memory.
     config KBD_RESET_HAS_2ND_BYTE
         bool "Keyboard reset has second byte"
-        default y
+        default n
         help
             Marked if keyboard reset has second byte (default).
     config ACPI_HPET
         bool "Add AHCI HPET Table"
-        default y
+        default n
         help
             The HPET table is only added to the AHCI tables if this is set.
 endmenu
