@@ -9,8 +9,9 @@
 #define PORT_PCI_DATA          0x0cfc
 
 #define PCI_ROM_SLOT 6
-#define PCI_NUM_REGIONS 7
+#define PCI_NUM_REGIONS 8
 #define PCI_BRIDGE_NUM_REGIONS 2
+#define PCI_SPECIAL_SLOT 7
 
 enum pci_region_type {
     PCI_REGION_TYPE_IO,
