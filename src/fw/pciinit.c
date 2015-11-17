@@ -164,7 +164,7 @@ static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
     }
     outb(elcr[0], PIIX_PORT_ELCR1);
     outb(elcr[1], PIIX_PORT_ELCR2);
-    dprintf(1, "PIIX3/PIIX4 init: elcr=%02x %02x\n", elcr[0], elcr[1]);
+    dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n", elcr[0], elcr[1]);
 }
 
 static void mch_isa_lpc_setup(u16 bdf)
@@ -337,6 +337,16 @@ static void intel_igd_setup(struct pci_device *dev, void *arg)
     }
 }
 
+static void ich10_pm_init(struct pci_device *pci, void *arg)
+{
+    u16 bdf = pci->bdf;
+    /* ICH10 LPC device, power management (for ACPI) */
+    pci_config_writeb(bdf, PCI_INTERRUPT_LINE, 9); // SCI IRQ 9
+
+    pci_config_writel(bdf, 0x40, acpi_pm_base | 1);
+    pci_config_writeb(bdf, 0x44, 0x80); // ACPI enabled, SCI IRQ 9
+}
+
 static const struct pci_device_id pci_device_tbl[] = {
     /* PIIX3/PIIX4 PCI to ISA bridge */
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_0,
@@ -345,11 +355,17 @@ static const struct pci_device_id pci_device_tbl[] = {
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_LPC,
                mch_isa_bridge_setup),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
+               piix_isa_bridge_setup),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
+               piix_isa_bridge_setup),
 
     /* STORAGE IDE */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_1,
                      PCI_CLASS_STORAGE_IDE, piix_ide_setup),
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB,
+                     PCI_CLASS_STORAGE_IDE, piix_ide_setup),
+    PCI_DEVICE_CLASS(PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
                      PCI_CLASS_STORAGE_IDE, piix_ide_setup),
     PCI_DEVICE_CLASS(PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_STORAGE_IDE,
                      storage_ide_setup),
@@ -365,6 +381,8 @@ static const struct pci_device_id pci_device_tbl[] = {
                piix4_pm_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_SMBUS,
                ich9_smbus_setup),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
+               ich10_pm_init),
 
     /* 0xff00 */
     PCI_DEVICE_CLASS(PCI_VENDOR_ID_APPLE, 0x0017, 0xff00, apple_macio_setup),
@@ -408,8 +426,20 @@ static void pci_bios_init_device(struct pci_device *pci)
     dprintf(1, "PCI: init bdf=%pP id=%04x:%04x\n"
             , pci, pci->vendor, pci->device);
 
-    /* map the interrupt */
     u16 bdf = pci->bdf;
+    int class = pci_config_readw(bdf, PCI_CLASS_DEVICE);
+    /* enable memory mappings */
+    if (class != PCI_CLASS_BRIDGE_PCI) {
+            /* TODO-X58: We need to handle PCI-to-PCI bridges in a special
+               way. This should be done similarly to the PCI-to-PCI
+               initialization code in the Virtutech BIOS (search for 'Header
+               type 1. PCI-to-PCI bridge' in rombios.c). This workaround will
+               work as long as all PCI buses expect 0 (the top-level bus in the
+               northbridge) are empty. */
+            pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO
+                             | PCI_COMMAND_MEMORY);
+    }
+    /* map the interrupt */
     int pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
     if (pin != 0)
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pci_slot_get_irq(pci, pin));

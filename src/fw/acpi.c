@@ -111,6 +111,38 @@ static void ich9_lpc_fadt_setup(struct pci_device *dev, void *arg)
                               ACPI_FADT_F_USE_PLATFORM_CLOCK);
 }
 
+
+#define ICH10_ACPI_ENABLE   0xf0
+#define ICH10_ACPI_DISABLE  0xf1
+#define ICH10_GPE0_BLK_LEN  16
+static void ich10_fadt_init(struct pci_device *pci, void *arg)
+{
+    struct fadt_descriptor_rev1 *fadt = arg;
+    fadt->model = 1;
+    fadt->reserved1 = 0;
+    fadt->acpi_enable = ICH10_ACPI_ENABLE;
+    fadt->acpi_disable = ICH10_ACPI_DISABLE;
+    fadt->gpe0_blk = cpu_to_le32(acpi_pm_base + 0x20);
+    fadt->gpe0_blk_len = ICH10_GPE0_BLK_LEN;
+    fadt->flags = cpu_to_le32(ACPI_FADT_F_WBINVD |
+                              ACPI_FADT_F_PWR_BUTTON |
+                              ACPI_FADT_F_SLP_BUTTON |
+                              ACPI_FADT_F_FIX_RTC);
+    /* Legacy devices and 8042 present */
+    fadt->ia32_boot_arch = 3;
+
+    fadt->sci_int = cpu_to_le16(PIIX_PM_INTRRUPT);
+    fadt->smi_cmd = cpu_to_le32(PORT_SMI_CMD);
+    fadt->pm1a_evt_blk = cpu_to_le32(acpi_pm_base);
+    fadt->pm1a_cnt_blk = cpu_to_le32(acpi_pm_base + 0x04);
+    fadt->pm_tmr_blk = cpu_to_le32(acpi_pm_base + 0x08);
+    fadt->pm1_evt_len = 4;
+    fadt->pm1_cnt_len = 2;
+    fadt->pm_tmr_len = 4;
+    fadt->plvl2_lat = cpu_to_le16(0xfff); // C2 state not supported
+    fadt->plvl3_lat = cpu_to_le16(0xfff); // C3 state not supported
+}
+
 static const struct pci_device_id fadt_init_tbl[] = {
     /* PIIX4 Power Management device (for ACPI) */
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3,
@@ -119,6 +151,10 @@ static const struct pci_device_id fadt_init_tbl[] = {
                piix4_virtutech_fadt_init),    
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_LPC,
                ich9_lpc_fadt_setup),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
+               ich10_fadt_init),
+    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
+               ich10_fadt_init),
     PCI_DEVICE_END
 };
 
