@@ -125,7 +125,15 @@ smp_setup(void)
 
     // Wait for other CPUs to process the SIPI.
     if (!CONFIG_USE_CMOS_BIOS_SMP_COUNT) {
-            msleep(10);
+        MaxCountCPUs = romfile_loadint("etc/max-cpus", 0);
+        
+        /* Wait up to 10 ms, with early out */
+        int ms_count;
+        for (ms_count = 0; ms_count < 10000; ms_count++) {
+            if (MaxCountCPUs && CountCPUs == MaxCountCPUs)
+                break;
+            udelay(1);
+        }
     } else {
             u8 cmos_smp_count = rtc_read(CMOS_BIOS_SMP_COUNT) + 1;
             while (cmos_smp_count != CountCPUs)
@@ -141,12 +149,12 @@ smp_setup(void)
                             : "+m" (SMPLock), "+m" (SMPStack)
                             : : "cc", "memory");
             yield();
+            MaxCountCPUs = romfile_loadint("etc/max-cpus", 0);
     }
     
     // Restore memory.
     *(u64*)BUILD_AP_BOOT_ADDR = old;
 
-    MaxCountCPUs = romfile_loadint("etc/max-cpus", 0);
     if (!MaxCountCPUs || MaxCountCPUs < CountCPUs)
         MaxCountCPUs = CountCPUs;
 
