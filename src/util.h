@@ -107,6 +107,9 @@ void mptable_setup(void);
 // fw/mtrr.c
 void mtrr_setup(void);
 
+// fw/mtrr.c
+void feature_setup(void);
+
 // fw/multiboot.c
 void multiboot_init(void);
 

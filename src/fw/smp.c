@@ -24,8 +24,8 @@
 #define MSR_LOCAL_APIC_ID 0x802
 #define MSR_IA32_APICBASE_EXTD (1ULL << 10) /* Enable x2APIC mode */
 
-static struct { u32 index; u64 val; } smp_msr[32];
-static u32 smp_msr_count;
+struct { u32 index; u64 val; } smp_msr[33];
+u32 smp_msr_count;
 
 void
 wrmsr_smp(u32 index, u64 val)
