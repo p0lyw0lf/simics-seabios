@@ -20,8 +20,8 @@
 
 #define APIC_ENABLED 0x0100
 
-static struct { u32 index; u64 val; } smp_msr[32];
-static u32 smp_msr_count;
+struct { u32 index; u64 val; } smp_msr[33];
+u32 smp_msr_count;
 
 void
 wrmsr_smp(u32 index, u64 val)
