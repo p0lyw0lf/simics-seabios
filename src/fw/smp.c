@@ -149,7 +149,15 @@ smp_scan(void)
 
     // Wait for other CPUs to process the SIPI.
     if (!CONFIG_USE_CMOS_BIOS_SMP_COUNT) {
-            msleep(10);
+        MaxCountCPUs = romfile_loadint("etc/max-cpus", 0);
+        
+        /* Wait up to 10 ms, with early out */
+        int ms_count;
+        for (ms_count = 0; ms_count < 10000; ms_count++) {
+            if (MaxCountCPUs && CountCPUs == MaxCountCPUs)
+                break;
+            udelay(1);
+        }
     } else {
             u8 expected_cpus_count = qemu_get_present_cpus_count();
             while (expected_cpus_count != CountCPUs)
@@ -165,6 +173,7 @@ smp_scan(void)
                             : "+m" (SMPLock), "+m" (SMPStack)
                             : : "cc", "memory");
             yield();
+            MaxCountCPUs = romfile_loadint("etc/max-cpus", 0);
     }
 
     // Restore memory.
