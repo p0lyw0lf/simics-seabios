@@ -204,6 +204,7 @@ qemu_platform_setup(void)
 #define QEMU_CFG_BOOT_MENU              0x0e
 #define QEMU_CFG_MAX_CPUS               0x0f
 #define QEMU_CFG_FILE_DIR               0x19
+#define QEMU_CFG_APIC_ID                0x100 /* 0x1ff for 256 threads */
 #define QEMU_CFG_ARCH_LOCAL             0x8000
 #define QEMU_CFG_ACPI_TABLES            (QEMU_CFG_ARCH_LOCAL + 0)
 #define QEMU_CFG_SMBIOS_ENTRIES         (QEMU_CFG_ARCH_LOCAL + 1)
@@ -464,6 +465,23 @@ qemu_cfg_legacy(void)
         qemu_cfg_skip(header.length - sizeof(header));
         offset += header.length;
     }
+}
+
+u16 qemu_cfg_get_apic_id(int cpu)
+{
+    u16 apic_id;
+
+    if (!runningOnQEMU())
+        return cpu; /* assume 1:1 */
+
+    qemu_cfg_read_entry(&apic_id, QEMU_CFG_APIC_ID+cpu, sizeof(apic_id));
+
+    if (apic_id == 0)
+            /* Request not known by paravirt device. Also, assume that CPU 0
+               has ID 0. */
+            apic_id = cpu;
+
+    return apic_id;
 }
 
 struct QemuCfgFile {

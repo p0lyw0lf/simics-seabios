@@ -182,7 +182,7 @@ build_madt(void)
         apic->type = APIC_PROCESSOR;
         apic->length = sizeof(*apic);
         apic->processor_id = i;
-        apic->local_apic_id = i;
+        apic->local_apic_id = qemu_cfg_get_apic_id(i);
         if (apic_id_is_present(apic->local_apic_id))
             apic->flags = cpu_to_le32(1);
         else
@@ -411,7 +411,8 @@ build_ssdt(void)
     ssdt_ptr = encodeLen(ssdt_ptr, 2+1+(1*acpi_cpus), 2);
     *(ssdt_ptr++) = acpi_cpus;
     for (i=0; i<acpi_cpus; i++)
-        *(ssdt_ptr++) = (apic_id_is_present(i)) ? 0x01 : 0x00;
+            *(ssdt_ptr++) = (apic_id_is_present(qemu_cfg_get_apic_id(i)))
+                    ? 0x01 : 0x00;
 
     // build Scope(PCI0) opcode
     *(ssdt_ptr++) = 0x10; // ScopeOp
@@ -515,12 +516,12 @@ build_srat(void)
     for (i = 0; i < max_cpu; ++i) {
         core->type = SRAT_PROCESSOR;
         core->length = sizeof(*core);
-        core->local_apic_id = i;
+        core->local_apic_id = qemu_cfg_get_apic_id(i);
         curnode = *numacpumap++;
         core->proximity_lo = curnode;
         memset(core->proximity_hi, 0, 3);
         core->local_sapic_eid = 0;
-        if (apic_id_is_present(i))
+        if (apic_id_is_present(core->local_apic_id))
             core->flags = cpu_to_le32(1);
         else
             core->flags = cpu_to_le32(0);
