@@ -55,8 +55,10 @@ static void
 __copy_bios(void)
 {
     /* Read (and execute) from PCI, write to RAM */
-    modify_shadow(0xf0000, 0x10000, Write_Only);
     modify_shadow(0xe0000, 0x10000, Write_Only);
+    modify_shadow(0xd0000, 0x10000, Write_Only);
+    modify_shadow(0xc0000, 0x10000, Write_Only);
+    modify_shadow(0xf0000, 0x10000, Write_Only);
 
     // Copy bios.
     memcpy(VSYMBOL(code32flat_start),
@@ -66,6 +68,8 @@ __copy_bios(void)
     /* Keep BIOS read/write */
     modify_shadow(0xf0000, 0x10000, Read_Write);
     modify_shadow(0xe0000, 0x10000, Read_Write);
+    modify_shadow(0xd0000, 0x10000, Read_Write);
+    modify_shadow(0xc0000, 0x10000, Read_Write);
 }
 
 #else
