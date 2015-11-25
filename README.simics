@@ -9,8 +9,8 @@ by Wind River.
 Build Environment
 -----------------
 
-Versions less than 1.8 requires older build tools. Known good are gcc
-4.4.3 and binutils (e.g. ld, objcopy, objdump etc) 2.20.1.20100303
+Seabios is supposed to be buildable with recent versions of gcc and binutils.
+Known good versions are gcc 5.1.1 and binutils 2.25-9
 
 Compiling SeaBIOS
 -----------------
