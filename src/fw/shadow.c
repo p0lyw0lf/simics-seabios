@@ -50,9 +50,20 @@ static void
 __copy_bios(void)
 {
     /* Read (and execute) from PCI, write to RAM */
-    modify_shadow(0xf0000, 0x10000, Write_Only);
     modify_shadow(0xe0000, 0x10000, Write_Only);
     modify_shadow(0xd0000, 0x10000, Write_Only);
+    modify_shadow(0xc0000, 0x10000, Write_Only);
+
+    if (CONFIG_OPTIONROMS_DEPLOYED) {
+            int i;
+            for (i=0; i<6; i++) {
+                    void *mem = (void*)(BUILD_ROM_START + i * 32*1024);
+                    memcpy((void*)BUILD_BIOS_TMP_ADDR, mem, 32*1024);
+                    memcpy(mem, (void*)BUILD_BIOS_TMP_ADDR, 32*1024);
+            }
+    }
+    
+    modify_shadow(0xf0000, 0x10000, Write_Only);
 
     // Copy bios.
     memcpy(VSYMBOL(code32flat_start),
@@ -63,6 +74,7 @@ __copy_bios(void)
     modify_shadow(0xf0000, 0x10000, Read_Write);
     modify_shadow(0xe0000, 0x10000, Read_Write);
     modify_shadow(0xd0000, 0x10000, Read_Write);
+    modify_shadow(0xc0000, 0x10000, Read_Write);
 }
 
 #else
