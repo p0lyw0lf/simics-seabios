@@ -26,6 +26,8 @@ Build:
 
 To use the compiled bios, point $bios in the Simics target scripts to
 <seabios>/out/bios.bin
+To use the compiled vgabios, point $vga_bios_image in the Simics target
+scripts to <seabios>/out/vgabios.bin
 
 Debugging SeaBIOS
 -----------------
@@ -51,16 +53,20 @@ Developing SeaBIOS
 
 Follow the steps above in "Compiling SeaBIOS" to setup a SeaBIOS git.
 
-Make your modifications in the proper branch. Compile and test it
-by setting the $bios variable in corresponding Simics target
-scripts. This is most easily done in the trampoline target scripts in
-a Simics project.
+Make your modifications in the proper branch. Compile and test it by
+setting the $bios and/or $vga_bios_image variables in corresponding
+Simics target scripts. This is most easily done in the trampoline
+target scripts in a Simics project.
 
 When you are ready to distribute a new version, copy out/bios.bin to
 /home/virtutech/dumps/x86. The name should be
 seabios-simics-<platform>-<mainline-short-version>-<date>.bin, where
 <mainline-short-version> is the version string from the branch name,
 <platform> is the platform part of branch name.
+
+Similarly, if you have changed the vgabios, copy out/vgabios.bin to
+/home/virtutech/dumps/x86 and rename it to
+seavgabios-simics-<platform>-<mainline-short-version>-<date>.bin
 
 Tag the tree to make it easy to correlate filename with repo commit.
 
@@ -72,7 +78,7 @@ Update create-links.py to link to the new version.
 Update relevant package files in config/dist to include new version.
 
 Possibly update Simics tests which depend on the specific BIOS
-binary. Currently this includes t952 and the littrace tests. In Simics
-5 the t83 files needs to be updated to include the BIOS files.
+binary. Currently this includes t429, t460, t952 and the littrace tests.
+In Simics 5 the t83 files needs to be updated to include the BIOS files.
 
 Add a note to RELEASENOTES.seabios.docu in this directory.
