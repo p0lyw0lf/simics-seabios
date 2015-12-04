@@ -154,16 +154,16 @@ scsi_is_ready(struct disk_op_s *op)
             return -1;
         }
 
-        int ret = cdb_test_unit_ready(op);
-        if (!ret)
-            // Success
-            break;
-
         struct cdbres_request_sense sense;
-        ret = cdb_get_sense(op, &sense);
+        int ret = cdb_get_sense(op, &sense);
         if (ret)
             // Error - retry.
             continue;
+        
+        ret = cdb_test_unit_ready(op);
+        if (!ret)
+            // Success
+            break;
 
         // Sense succeeded.
         if (sense.asc == 0x3a) { /* MEDIUM NOT PRESENT */
