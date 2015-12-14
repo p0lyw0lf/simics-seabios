@@ -240,10 +240,10 @@ DefinitionBlock (
             PRQ2,   8, 
             PRQ3,   8, 
             Offset (0x08), 
-            PIRE,   8, 
-            PIRF,   8, 
-            PIRG,   8, 
-            PIRH,   8
+            PRQ4,   8, 
+            PRQ5,   8, 
+            PRQ6,   8, 
+            PRQ7,   8
         }
 
         Method(IQST, 1, NotSerialized) {
@@ -270,8 +270,8 @@ DefinitionBlock (
             Name(_HID, EISAID("PNP0C0F"))                       \
             Name(_UID, uid)                                     \
             Name(_PRS, ResourceTemplate() {                     \
-                Interrupt(, Level, ActiveHigh, Shared) {        \
-                    5, 10, 11                                   \
+		Interrupt(, Level, ActiveHigh, Shared) {        \
+		    3, 4, 5, 6, 7, 9, 10, 11, 12, 14, 15        \
                 }                                               \
             })                                                  \
             Method(_STA, 0, NotSerialized) {                    \
@@ -310,29 +310,15 @@ DefinitionBlock (
 #define PIRQ_G  22
 #define PIRQ_H  23
 
-        /* buffer used to return current setting */
-        Name (IRET, ResourceTemplate () {
-            IRQ (Level, ActiveLow, Shared, )
-                {0}
-        })
-        CreateWordField (IRET, One, IRQV)
-
-        /* valid PCI IRQ targets */
-        Name (PRSx, ResourceTemplate () {
-            IRQ (Level, ActiveLow, Shared, )
-                {9, 10, 11}
-        })
-
         /* links */
         define_link(LNKA, 0, PRQ0)
         define_link(LNKB, 1, PRQ1)
         define_link(LNKC, 2, PRQ2)
         define_link(LNKD, 3, PRQ3)
-
-        //LINK(LNKE, 5, PIRE, PRSx)
-        //LINK(LNKF, 6, PIRF, PRSx)
-        //LINK(LNKG, 7, PIRG, PRSx)
-        //LINK(LNKH, 8, PIRH, PRSx)
+        define_link(LNKE, 4, PRQ4)
+        define_link(LNKF, 5, PRQ5)
+        define_link(LNKG, 6, PRQ6)
+        define_link(LNKH, 7, PRQ7)
 
         /* legacy IRQ routing */
         Name (PR00, Package ()
