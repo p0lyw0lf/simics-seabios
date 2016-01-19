@@ -99,35 +99,70 @@ init_bda(void)
 static void
 ram_probe(void)
 {
+    u32 stolen_mem_megs = ((inb_cmos(CMOS_STOLMEM_SIZE_HIGH) << 8 )
+                          | inb_cmos(CMOS_STOLMEM_SIZE_LOW) );
+    if (stolen_mem_megs > 2048)  {
+        dprintf(1, "\n\nspecified stolen mem size = %d (MB); \n", stolen_mem_megs);
+        dprintf(1, "allowed size - 0 - 2048 (MB) \n\n");
+        dprintf(1, "FATAL : CMOS reports wrong stolen mem size. \n");
+        while (1) {}
+    }
+
     dprintf(3, "Find memory size\n");
     if (CONFIG_COREBOOT) {
         coreboot_setup();
     } else if (usingXen()) {
-	xen_setup();
+        xen_setup();
     } else {
         // On emulators, get memory size from nvram.
-        u32 rs = ((inb_cmos(CMOS_MEM_EXTMEM2_LOW) << 16)
+        u32 low_ram = ((inb_cmos(CMOS_MEM_EXTMEM2_LOW) << 16)
                   | (inb_cmos(CMOS_MEM_EXTMEM2_HIGH) << 24));
-        if (rs)
-            rs += 16 * 1024 * 1024;
+
+        if (low_ram)
+            // reserve 16 MB for BIOS
+            low_ram += 16 * 1024 * 1024;
         else
-            rs = (((inb_cmos(CMOS_MEM_EXTMEM_LOW) << 10)
+            low_ram = (((inb_cmos(CMOS_MEM_EXTMEM_LOW) << 10)
                    | (inb_cmos(CMOS_MEM_EXTMEM_HIGH) << 18))
                   + 1 * 1024 * 1024);
-        RamSize = rs;
-        
-        // cut off 256 MB stolen memory for graphics
-        u32 stolen_mem_size = 256 * 1024 * 1024;
-        rs -= stolen_mem_size;
-        
-        add_e820(0, rs, E820_RAM);
+        //RamSize = low_ram; // RamSize - global extern variable
 
-        // Check for memory over 4Gig
-        u64 high = ((inb_cmos(CMOS_MEM_HIGHMEM_LOW) << 16)
-                    | ((u32)inb_cmos(CMOS_MEM_HIGHMEM_MID) << 24)
-                    | ((u64)inb_cmos(CMOS_MEM_HIGHMEM_HIGH) << 32));
-        RamSizeOver4G = high;
-        add_e820(0x100000000ull, high, E820_RAM);
+      
+        // check for memory over 4Gb
+        u64 high_ram = ((inb_cmos(CMOS_MEM_HIGHMEM_LOW)  << 16)
+                 | ((u32)inb_cmos(CMOS_MEM_HIGHMEM_MID)  << 24)
+                 | ((u64)inb_cmos(CMOS_MEM_HIGHMEM_HIGH) << 32));
+        //RamSizeOver4G = high_ram;
+
+        u8 stolen_mem_conf = inb_cmos(CMOS_STOLMEM_CONF);
+        switch (stolen_mem_conf) {
+        case 0: // cut stolen below TOLUD
+            low_ram -= (stolen_mem_megs * 1024 * 1024);
+            break;
+        case 1: // cut stolen below TOUUD
+            // check if enough space for stolen mem below TOUUD
+            if ((int)high_ram < (int)stolen_mem_megs * 1024 * 1024) {
+                dprintf(1, "\n\n Not enough RAM above 4GB for stolen memory: \n");
+                dprintf(1, "stolen mem conf = 1; (locate stolen below TOUUD) \n");
+                dprintf(1, "stolen mem size    = %llu; \n", stolen_mem_megs * 1024 * 1024);
+                dprintf(1, "ram size above 4Gb = %llu \n", high_ram * 1024 * 1024);
+                dprintf(1, "FATAL : not enough RAM for stolen below TOUUD \n");
+                while (1) {}
+            }
+            high_ram -= (stolen_mem_megs * 1024 * 1024);
+            break;
+        default:
+            dprintf(1, "\n\nspecified stolen mem conf = %d ; \n", stolen_mem_conf);
+            dprintf(1, "Only 0x0 or 0x1 values allowed\n\n");
+            dprintf(1, "FATAL : CMOS reports wrong stolen mem conf. \n");
+            while (1) {}
+        }
+        
+        // report low RAM part (below 4Gb)
+        add_e820(0, low_ram, E820_RAM);
+        
+        // report high RAM over 4Gb - if none, function will do nothing
+        add_e820(0x100000000ull, high_ram, E820_RAM);
 
         /* reserve 256KB BIOS area at the end of 4 GB */
         add_e820(0xfffc0000, 256*1024, E820_RESERVED);
@@ -154,9 +189,6 @@ ram_probe(void)
         // other page for EPT real mode pagetable
         add_e820(0xfffbc000, 4*4096, E820_RESERVED);
     }
-
-    dprintf(1, "Ram Size=0x%08x (0x%08x%08x high)\n"
-            , RamSize, (u32)(RamSizeOver4G >> 32), (u32)RamSizeOver4G);
 }
 
 static void
