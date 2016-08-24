@@ -11,6 +11,7 @@ Build Environment
 
 Seabios is supposed to be buildable with recent versions of gcc and binutils.
 Known good versions are gcc 5.1.1 and binutils 2.25-9
+The iasl tool is also required and recent versions may not work. Known good version is 20151124 (already set in Makefile)
 
 Compiling SeaBIOS
 -----------------

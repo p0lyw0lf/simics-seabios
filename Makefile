@@ -24,7 +24,7 @@ OBJDUMP=$(CROSS_PREFIX)objdump
 STRIP=$(CROSS_PREFIX)strip
 PYTHON=python
 CPP=cpp
-IASL:=iasl
+IASL:=/home/packages/acpica-unix-20151124/generate/unix/bin/iasl
 LD32BIT_FLAG:=-melf_i386
 
 # Source files
