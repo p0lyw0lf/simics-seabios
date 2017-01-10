@@ -261,9 +261,11 @@ qemu_cfg_read_entry(void *buf, int e, int len)
         u32 control = (e << 16) | QEMU_CFG_DMA_CTL_SELECT
                         | QEMU_CFG_DMA_CTL_READ;
         qemu_cfg_dma_transfer(buf, len, control);
+        dprintf(1, "qemu_cfg_dma_read");
     } else {
         qemu_cfg_select(e);
         qemu_cfg_read(buf, len);
+        dprintf(1, "qemu_cfg_read: %x\n", e);
     }
 }
 
@@ -419,6 +421,8 @@ qemu_cfg_legacy(void)
                      , sizeof(numacount) + max_cpu*sizeof(u64)
                      , numacount*sizeof(u64));
 
+    //@jg 2016-12-5
+    dprintf(1, "qemu_cfg_read_entry.");
     // ACPI tables
     char name[128];
     u16 cnt;
@@ -483,9 +487,8 @@ struct QemuCfgFile {
 
 void qemu_cfg_init(void)
 {
-    if (!runningOnQEMU())
+	if (!runningOnQEMU())
         return;
-
     // Detect fw_cfg interface.
     qemu_cfg_select(QEMU_CFG_SIGNATURE);
     char *sig = "QEMU";

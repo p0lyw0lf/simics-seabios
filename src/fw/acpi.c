@@ -543,6 +543,43 @@ build_ssdt(void)
     return ssdt;
 }
 
+//@jg 2017-1-7, add NFIT SSDT table in RSDT
+static unsigned char nfit_aml[] = {
+#include "NFIT.hex"
+};
+
+static unsigned char ssdt_aml[] = {
+#include "SSDT.hex"
+};
+
+static void *build_nfit(void)
+{
+	u8 *nfit = malloc_high(sizeof(nfit_aml));
+	if (! nfit) {
+		warn_noalloc();
+	    return NULL;
+	}
+
+	u8 *nfit_ptr = nfit;
+	memcpy(nfit_ptr, nfit_aml, sizeof(nfit_aml));
+	dprintf(1, "nfit: %x.\n", (unsigned)nfit);
+	return nfit;
+}
+
+static void *build_nvdimm_ssdt(void)
+{
+	u8 *ssdt = malloc_high(sizeof(ssdt_aml));
+	if (! ssdt) {
+		warn_noalloc();
+		return NULL;
+	}
+
+	u8 *ssdt_ptr = ssdt;
+	memcpy(ssdt_ptr, ssdt_aml, sizeof(ssdt_aml));
+	dprintf(1, "ssdt: %x.\n", (unsigned)ssdt);
+	return ssdt;
+}
+
 #define HPET_ID         0x000
 #define HPET_PERIOD     0x004
 
@@ -818,9 +855,16 @@ acpi_setup(void)
     if (dmar)
         ACPI_INIT_TABLE(dmar);
 
+    //@jg 2017-1-7, add NFIT and SSDT
+    ACPI_INIT_TABLE(build_nfit());
+    ACPI_INIT_TABLE(build_nvdimm_ssdt());
+
     struct romfile_s *file = NULL;
     for (;;) {
         file = romfile_findprefix("acpi/", file);
+        //@jg 20161210
+        dprintf(1, "acpi_setup(), filename %s\n", file->name);
+        dprintf(1, "acpi_setup(), file size %d\n", file->size);
         if (!file)
             break;
         struct acpi_table_header *table = malloc_high(file->size);
@@ -862,6 +906,8 @@ acpi_setup(void)
     struct rsdt_descriptor_rev1 *rsdt;
     size_t rsdt_len = sizeof(*rsdt) + sizeof(u32) * tbl_idx;
     rsdt = malloc_high(rsdt_len);
+    //@jg 2016-12-28
+    dprintf(1, "acpi_setup(), RSDT = %x\n", (unsigned)rsdt);
     if (!rsdt) {
         warn_noalloc();
         return;
