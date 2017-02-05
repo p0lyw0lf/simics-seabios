@@ -380,6 +380,9 @@ encodeLen(u8 *ssdt_ptr, int length, int bytes)
 #include "src/fw/ssdt-misc.hex"
 #include "src/fw/ssdt-pcihp.hex"
 
+//@jg 2017-2-5 nfit-ssdt.dsl
+#include "src/fw/nfit-ssdt.hex"
+
 #define PCI_RMV_BASE 0xae0c
 
 static u8*
@@ -548,9 +551,11 @@ static unsigned char nfit_aml[] = {
 #include "NFIT.hex"
 };
 
+/*@jg 2017-2-5, Replaced by nfit-ssdt.dsl
 static unsigned char ssdt_aml[] = {
 #include "SSDT.hex"
 };
+*/
 
 static void *build_nfit(void)
 {
@@ -568,14 +573,16 @@ static void *build_nfit(void)
 
 static void *build_nvdimm_ssdt(void)
 {
-	u8 *ssdt = malloc_high(sizeof(ssdt_aml));
+	//@jg 2017-2-5	u8 *ssdt = malloc_high(sizeof(ssdt_aml));
+	u8 *ssdt = malloc_high(sizeof(nfit_ssdt_aml));
 	if (! ssdt) {
 		warn_noalloc();
 		return NULL;
 	}
 
 	u8 *ssdt_ptr = ssdt;
-	memcpy(ssdt_ptr, ssdt_aml, sizeof(ssdt_aml));
+	//@jg 2017-2-5	memcpy(ssdt_ptr, ssdt_aml, sizeof(ssdt_aml));
+	memcpy(ssdt_ptr, nfit_ssdt_aml, sizeof(nfit_ssdt_aml));
 	dprintf(1, "ssdt: %x.\n", (unsigned)ssdt);
 	return ssdt;
 }
