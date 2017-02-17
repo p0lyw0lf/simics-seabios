@@ -19,7 +19,7 @@ Scope(\_SB) {
             CONF, 16
         }
         
-        Name(BUFF, Buffer(0x02) { Zero, Zero } )
+        Name(BUFF, Buffer(4096) {0, 0 } )
         Name(SIZE, 0)
         Name(INDX, 0)
         
@@ -35,33 +35,41 @@ Scope(\_SB) {
             
             While(LGreater(SIZE, INDX))
             {
-                CreateWordField(BUFF, INDX, DATA)
-                Store(DATA, CONF)
-                Add(INDX, 2, INDX)                
+                Store(DeRefOf(Index(BUFF, INDX)), Local1)
+                Add(INDX, 1, INDX)
+                Store(DeRefOf(Index(BUFF, INDX)), Local2)
+                Add(INDX, 1, INDX)
+                ShiftLeft(Local2, 8, Local2)
+                Or(Local1, Local2, Local1)
+                Store(Local1, CONF)                                
             }            
         }
         
         Method (READ, 2, Serialized)
         {
             BUFF = Arg0
-            SIZe = Arg1
+            SIZE = Arg1
             INDX = Zero
-            
+            Local3 = Zero
+            Local4 = Zero
             While(LGreater(SIZE, INDX))
             {
-                CreateWordField(BUFF, INDX, DATA)
-                Store(CONF, DATA)
-                Add(INDX, 2, INDX)                
-            }      
+                Store(CONF, Local3)
+                Store(Local3, Index(BUFF, INDX))
+                Add(INDX, 1, INDX)
+                
+                ShiftRight(Local3, 8, Local4)
+                Store(Local4, Index(BUFF, INDX))
+                Add(INDX, 1, INDX)                
+            }             
         }
         
         /* _DSM: Device-Specific Method */
         Method (_DSM, 4, NotSerialized)
         {
             Local0 = ToUUID ("2f10e7a4-9e91-11e4-89d3-123b93f75cba")
-            WRIT(Local0, SizeOf(Local0))
-            Local0 = ToUUID ("4309ac30-0d11-11e4-9191-0800200c9a66")
-            WRIT(Local0, SizeOf(Local0))
+            READ(Local0, 0x10)
+            WRIT(Local0, SizeOf(Local0))          
             Return( Zero )
         }
     }
