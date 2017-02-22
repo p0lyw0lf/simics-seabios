@@ -72,6 +72,18 @@ Scope(\_SB) {
             WRIT(Local0, SizeOf(Local0))          
             Return( Zero )
         }
+        
+        Device (NV00)
+        {
+            Name (_ADR, One)
+            Method (_DSM, 4, NotSerialized)
+            {
+                Local0 = ToUUID ("4309ac30-0d11-11e4-9191-0800200c9a66")
+                READ(Local0, 0x10)
+                WRIT(Local0, SizeOf(Local0)) 
+                Return( One )
+            }
+        }
     }
 }
 }
