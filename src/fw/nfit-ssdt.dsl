@@ -62,10 +62,17 @@ Scope(\_SB) {
         
         /* _DSM: Device-Specific Method */
         Method (_DSM, 4, NotSerialized)
-        {
+        {            
             Local0 = ToUUID ("2f10e7a4-9e91-11e4-89d3-123b93f75cba")
+            
+            /* write CTLW 0x8100, read DATA ('NFIT') */
+            CTLW = 0x8100
+            READ(Local0, 4)
+            /* write CTLW 0x8101, write DATA Local0, read back Local0 */
+            CTLW = 0x8101
+            WRIT(Local0, 0x10)
             READ(Local0, 0x10)
-            WRIT(Local0, SizeOf(Local0))          
+                      
             Return( Zero )
         }
         
