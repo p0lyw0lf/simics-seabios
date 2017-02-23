@@ -8,22 +8,28 @@ DefinitionBlock ("nfit-ssdt.aml", "SSDT", 0x01, "SIMICS", "NFITSSDT", 0x1)
 {
 
 /****************************************************************
- * PC-CONF IO space
+ * CFG1_CTLW/ CFG2_DATA IO space
  ****************************************************************/
 Scope(\_SB) {
 	Device(NVDR) {
         Name(_HID, "ACPI0012") // _HID: Hardware ID
-        OperationRegion(PC__, SystemIO, 0x510, 0x2)
-        Field(PC__, WordAcc, NoLock, Preserve)
+        OperationRegion(CFG1, SystemIO, 0x510, 0x2)
+        Field(CFG1, WordAcc, NoLock, Preserve)
         {   
-            CONF, 16
+            CTLW, 16
+        }
+        
+        OperationRegion(CFG2, SystemIO, 0x511, 0x1)
+        Field(CFG2, ByteAcc, NoLock, Preserve)
+        {
+            DATA, 8
         }
         
         Name(BUFF, Buffer(4096) {0, 0 } )
         Name(SIZE, 0)
         Name(INDX, 0)
         
-        /* Word write/read SIZE bytes from BUFF to PC__CONF IO port 
+        /* Word write/read SIZE bytes from BUFF to CFG2.DATA IO port 
          * WRIT(BUFF, SIZE)
          * READ(BUFF, SIZE)
          */
@@ -34,14 +40,10 @@ Scope(\_SB) {
             INDX = Zero
             
             While(LGreater(SIZE, INDX))
-            {
-                Store(DeRefOf(Index(BUFF, INDX)), Local1)
-                Add(INDX, 1, INDX)
-                Store(DeRefOf(Index(BUFF, INDX)), Local2)
-                Add(INDX, 1, INDX)
-                ShiftLeft(Local2, 8, Local2)
-                Or(Local1, Local2, Local1)
-                Store(Local1, CONF)                                
+            {                
+                Local1 = DeRefOf(Index(BUFF, INDX))
+                Increment(INDX)
+                DATA = Local1
             }            
         }
         
@@ -50,18 +52,12 @@ Scope(\_SB) {
             BUFF = Arg0
             SIZE = Arg1
             INDX = Zero
-            Local3 = Zero
-            Local4 = Zero
+            
             While(LGreater(SIZE, INDX))
             {
-                Store(CONF, Local3)
-                Store(Local3, Index(BUFF, INDX))
-                Add(INDX, 1, INDX)
-                
-                ShiftRight(Local3, 8, Local4)
-                Store(Local4, Index(BUFF, INDX))
-                Add(INDX, 1, INDX)                
-            }             
+                Index(BUFF, INDX) = DATA
+                Increment(INDX)
+            }          
         }
         
         /* _DSM: Device-Specific Method */
