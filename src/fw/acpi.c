@@ -380,9 +380,6 @@ encodeLen(u8 *ssdt_ptr, int length, int bytes)
 #include "src/fw/ssdt-misc.hex"
 #include "src/fw/ssdt-pcihp.hex"
 
-//@jg 2017-2-5 nfit-ssdt.dsl
-#include "src/fw/nfit-ssdt.hex"
-
 #define PCI_RMV_BASE 0xae0c
 
 static u8*
@@ -544,47 +541,6 @@ build_ssdt(void)
     //hexdump(ssdt, ssdt_ptr - ssdt);
 
     return ssdt;
-}
-
-//@jg 2017-1-7, add NFIT SSDT table in RSDT
-static unsigned char nfit_aml[] = {
-#include "NFIT.hex"
-};
-
-/*@jg 2017-2-5, Replaced by nfit-ssdt.dsl
-static unsigned char ssdt_aml[] = {
-#include "SSDT.hex"
-};
-*/
-
-static void *build_nfit(void)
-{
-	u8 *nfit = malloc_high(sizeof(nfit_aml));
-	if (! nfit) {
-		warn_noalloc();
-	    return NULL;
-	}
-
-	u8 *nfit_ptr = nfit;
-	memcpy(nfit_ptr, nfit_aml, sizeof(nfit_aml));
-	dprintf(1, "nfit: %x.\n", (unsigned)nfit);
-	return nfit;
-}
-
-static void *build_nvdimm_ssdt(void)
-{
-	//@jg 2017-2-5	u8 *ssdt = malloc_high(sizeof(ssdt_aml));
-	u8 *ssdt = malloc_high(sizeof(nfit_ssdt_aml));
-	if (! ssdt) {
-		warn_noalloc();
-		return NULL;
-	}
-
-	u8 *ssdt_ptr = ssdt;
-	//@jg 2017-2-5	memcpy(ssdt_ptr, ssdt_aml, sizeof(ssdt_aml));
-	memcpy(ssdt_ptr, nfit_ssdt_aml, sizeof(nfit_ssdt_aml));
-	dprintf(1, "ssdt: %x.\n", (unsigned)ssdt);
-	return ssdt;
 }
 
 #define HPET_ID         0x000
@@ -861,10 +817,6 @@ acpi_setup(void)
     void *dmar = build_dmar();
     if (dmar)
         ACPI_INIT_TABLE(dmar);
-
-    //@jg 2017-1-7, add NFIT and SSDT
-    ACPI_INIT_TABLE(build_nfit());
-    ACPI_INIT_TABLE(build_nvdimm_ssdt());
 
     struct romfile_s *file = NULL;
     for (;;) {
