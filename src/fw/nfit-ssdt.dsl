@@ -27,21 +27,24 @@ Scope(\_SB) {
             DATA, 8
         }
         
+        /* BUFF, read/write buffer.
+           SIZE, 4 bytes buffer data length.
+           INDX, read/write counter.
+         */
+        Name(RECV, Buffer(1024) {0, 0} )
         Name(BUFF, Buffer(4096) {0, 0 } )
         Name(SIZE, 0)
         Name(INDX, 0)
         
-        /* Word write/read SIZE bytes from BUFF to CFG2.DATA IO port 
-         * WRIT(BUFF, SIZE)
-         * READ(BUFF, SIZE)
+        /* WRIT(BUFF, SIZE), write SIZE bytes from BUFF to CFG2.DATA IO port.
+         * READ(), read data length in SIZE, then read SIZE bytes in BUFF.
          */
         Method(WRIT, 2, Serialized)
         {
             BUFF = Arg0
-            SIZE = Arg1
             INDX = Zero
             
-            While(LGreater(SIZE, INDX))
+            While(LGreater(Arg1, INDX))
             {                
                 Local1 = DeRefOf(Index(BUFF, INDX))
                 Increment(INDX)
@@ -49,12 +52,21 @@ Scope(\_SB) {
             }            
         }
         
-        Method (READ, 2, Serialized)
-        {
-            BUFF = Arg0
-            SIZE = Arg1
+        Method (READ, 0, Serialized)
+        {           
             INDX = Zero
             
+            /* Read data length (4 bytes) */
+            While(LGreater(0x4, INDX))
+            {
+                Index(BUFF, INDX) = DATA
+                Increment(INDX)
+            }
+            CreateDWordField(BUFF, 0, LEN)
+            SIZE = LEN            
+            
+            /* Read SIZE bytes of data to BUFF. */
+            INDX = Zero
             While(LGreater(SIZE, INDX))
             {
                 Index(BUFF, INDX) = DATA
@@ -62,9 +74,7 @@ Scope(\_SB) {
             }          
         }
         
-        /* RECV, 1024 bytes receive buffer for result. */
-        Name (RECV, Buffer(0x400) {})
-        
+                
         /* CDSM: common procedure to write parameters to DATA,
            then read result from DATA.
            Convert result to Arg5 and return.
@@ -92,6 +102,9 @@ Scope(\_SB) {
                 }
             }
             
+            /* Write 0x510 command id QEMU_CFG_ACPI_DSM */
+            CTLW = 0x8101
+            
             WRIT(Arg0, 0x4)
             WRIT(Local0, SizeOf(Local0))
             WRIT(Arg2, 0x4)
@@ -104,11 +117,11 @@ Scope(\_SB) {
                 WRIT(Local2, SizeOf(Local2))
             }
             
-            Local3 = 0
-            READ(Local3, 0x4)            
-            READ(RECV, Local3)
-            Local4 = Local3 << 0x3
-            CreateField(RECV, Zero, Local4, OUTB)
+            /* Read back DSM results (SIZE of bytes in BUFF) */
+            READ()                 
+            
+            Local4 = SIZE << 0x3
+            CreateField(BUFF, Zero, Local4, OUTB)
             Concatenate (Buffer (Zero) {}, OUTB, Local5)
             Return (Local5)
         }
