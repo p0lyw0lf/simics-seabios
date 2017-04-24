@@ -234,14 +234,20 @@ struct dmar_drhd {
     u64 address;
 } PACKED;
 
+struct dmar_device_scope_path_entry {
+    u8 device;
+    u8 function;
+} PACKED;
+
 struct dmar_device_scope {
     u8 type;
     u8 length;
     u16 reserved;
     u8  enum_id;
     u8  bus_num;
+    // Assumes only one path entry.
+    struct dmar_device_scope_path_entry path[1];
 } PACKED;
-#define DMAR_DEVICE_SCOPE_PATH u16
 
 struct dmar_rmrr {
     DMAR_SUB_HEADER_DEF
@@ -785,12 +791,31 @@ build_dmar(void)
     u32 remap_unit_0_addr = (vt_bar & (~0xfff));        // address of VT-d for all except GFX
     u32 remap_unit_1_addr = remap_unit_0_addr + 0x1000; // address of GFX VT-d (shifted by 0x1000 in model)
 
+    // Default to zero SRIOV virtual functions.
+    u32 total_vfs = 0;
+    u32 first_vf_offset;
+    u32 vf_stride;
+
+    // Go through PCIe extended capabilities looking for SRIOV capabilities.
+    u32 bdf = 0x0010;
+    u32 ext_cap_offs = 0x100;
+    while (ext_cap_offs != 0) {
+        u32 cap = pci_config_readl(bdf, ext_cap_offs);
+        if ((cap & 0xffff) == 0x0010) {
+            // Found SRIOV capabilities, extract VF info.
+            total_vfs =       pci_config_readw(bdf, ext_cap_offs + 0x0e);
+            first_vf_offset = pci_config_readw(bdf, ext_cap_offs + 0x14);
+            vf_stride =       pci_config_readw(bdf, ext_cap_offs + 0x16);
+        }
+        ext_cap_offs = cap >> 20;
+    }
+
     // Allocate space for DMAR table and its substructures
-    int dmar_size = sizeof(struct dmar_descriptor_rev1    ) + /* DMAR header                    */
-                  + sizeof(struct dmar_drhd               ) + /*   - DRHD header for GFX VT-d   */
-                  + sizeof(struct dmar_device_scope       ) + /*     -- GFX device              */
-                  + sizeof(DMAR_DEVICE_SCOPE_PATH         ) + /*        --- path to GFX device  */
-                  + sizeof(struct dmar_drhd               );  /*   - DRHD header for misc VT-d  */
+    int dmar_size = sizeof(struct dmar_descriptor_rev1)             /* DMAR header                 */
+                  + sizeof(struct dmar_drhd           )             /*   DRHD header for GFX VT-d  */
+                  + sizeof(struct dmar_device_scope   )             /*     GFX physical function   */
+                  + sizeof(struct dmar_device_scope   ) * total_vfs /*     GFX virtual functions   */
+                  + sizeof(struct dmar_drhd           );            /*   DRHD header for misc VT-d */
     struct dmar_descriptor_rev1 *dmar = malloc_high(dmar_size);
     memset(dmar, 0, dmar_size);
 
@@ -815,18 +840,33 @@ build_dmar(void)
     drhd_1->segment = 0;
     drhd_1->address = remap_unit_1_addr;  // gfx VT-d  is remap_unit_1 in model
 
-    // [DMAR->DRHD_1->GFX] -  0/2/0 GFX device in DRHD_1 device scope
+    // [DMAR->DRHD_1->GFX] - 0/2/X GFX functions in DRHD_1 device scope
     struct dmar_device_scope *gfx = (void*)drhd_1 + sizeof(*drhd_1);
-    gfx->type    = 1;    // PCI end-point device
-    gfx->length  = sizeof(*gfx);
-    gfx->enum_id = 0;   // reserved (0) - for PCI end-point device
-    gfx->bus_num = 0;   // PCI bus number
-    DMAR_DEVICE_SCOPE_PATH* gfx_path = (void*)gfx + sizeof(*gfx);
-    *gfx_path = 0x0002; // PCI path to gfx (0-)2-0 in 2 bytes reverted form;
-    gfx->length += sizeof(*gfx_path);
+
+    // Physical function.
+    gfx[0].type             = 1; // PCI Endpoint Device
+    gfx[0].length           = sizeof(gfx[0]);
+    gfx[0].enum_id          = 0; // Reserved in case of PCI Endpoint Device
+    gfx[0].bus_num          = 0;
+    gfx[0].path[0].device   = 2;
+    gfx[0].path[0].function = 0;
+    drhd_1->length += gfx[0].length;
+
+    // Virtual functions.
+    int i;
+    int f;
+    for (i = 1, f = first_vf_offset; i <= total_vfs; i++, f += vf_stride) {
+        gfx[i].type             = 1; // PCI Endpoint Device
+        gfx[i].length           = sizeof(gfx[i]);
+        gfx[i].enum_id          = 0; // Reserved in case of PCI Endpoint Device
+        gfx[i].bus_num          = 0;
+        gfx[i].path[0].device   = 2;
+        gfx[i].path[0].function = f;
+        drhd_1->length += gfx[i].length;
+    }
+
     // end of [DMAR->DRHD_1->GFX]
 
-    drhd_1->length += (gfx->length);
     // end of [DMAR->DRHD_1]
 
     // [DMAR->DRHD_2] - VTD for other devices
