@@ -195,9 +195,22 @@ static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
     dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n", elcr[0], elcr[1]);
  }
 
+static void ich10_pm_init(struct pci_device *pci, void *arg)
+{
+    u16 bdf = pci->bdf;
+    /* ICH10 LPC device, power management (for ACPI) */
+    pci_config_writeb(bdf, PCI_INTERRUPT_LINE, 9); // SCI IRQ 9
+
+    pci_config_writel(bdf, 0x40, acpi_pm_base | 1);
+    pci_config_writeb(bdf, 0x44, 0x80); // ACPI enabled, SCI IRQ 9
+    pmtimer_setup(acpi_pm_base + 0x08);    
+}
+
+
 static void ich10_isa_brigde_init_and_hpet_enable(struct pci_device *pci,
                                                   void *arg)
 {
+    ich10_pm_init(pci, arg);
     piix_isa_bridge_setup(pci, arg);
     ich10_enable_hpet(pci, arg);
 }
@@ -387,16 +400,6 @@ static void intel_igd_setup(struct pci_device *dev, void *arg)
     }
 }
 
-static void ich10_pm_init(struct pci_device *pci, void *arg)
-{
-    u16 bdf = pci->bdf;
-    /* ICH10 LPC device, power management (for ACPI) */
-    pci_config_writeb(bdf, PCI_INTERRUPT_LINE, 9); // SCI IRQ 9
-
-    pci_config_writel(bdf, 0x40, acpi_pm_base | 1);
-    pci_config_writeb(bdf, 0x44, 0x80); // ACPI enabled, SCI IRQ 9
-}
-
 static void x58_vtd_init(struct pci_device *pci, void *arg)
 {
     u16 bdf = pci->bdf;
@@ -452,16 +455,6 @@ static const struct pci_device_id pci_device_tbl[] = {
                piix4_pm_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_SMBUS,
                ich9_smbus_setup),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_7,
-               ich10_pm_init),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
-               ich10_pm_init),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
-               ich10_pm_init),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2,
-               ich10_pm_init),
-    PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
-               ich10_pm_init),
 
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x342e, x58_vtd_init),
 
