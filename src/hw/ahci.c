@@ -362,7 +362,7 @@ ahci_port_alloc(struct ahci_ctrl_s *ctrl, u32 pnr)
 
     ahci_port_writel(ctrl, pnr, PORT_LST_ADDR, (u32)port->list);
     ahci_port_writel(ctrl, pnr, PORT_FIS_ADDR, (u32)port->fis);
-    if (ctrl->caps & HOST_CAP_64) {
+    if ((ctrl->caps & HOST_CAP_64) || 1) {
         ahci_port_writel(ctrl, pnr, PORT_LST_ADDR_HI, 0);
         ahci_port_writel(ctrl, pnr, PORT_FIS_ADDR_HI, 0);
     }
