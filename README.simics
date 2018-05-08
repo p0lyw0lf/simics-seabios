@@ -59,11 +59,21 @@ setting the $bios and/or $vga_bios_image variables in corresponding
 Simics target scripts. This is most easily done in the trampoline
 target scripts in a Simics project.
 
+The x58-ich10 BIOS is built for both SATA and ATA. To build for ATA, you need to edit the .config file before building. The diff between ATA and SATA mode should be something like:
+
+-# CONFIG_ATA is not set
+-CONFIG_AHCI=y
++CONFIG_ATA=y
++#CONFIG_ATA_DMA is not set
++#CONFIG_ATA_PIO32 is not set
++#CONFIG_AHCI is not set
+
 When you are ready to distribute a new version, copy out/bios.bin to
 /home/virtutech/dumps/x86. The name should be
-seabios-simics-<platform>-<mainline-short-version>-<date>.bin, where
-<mainline-short-version> is the version string from the branch name,
-<platform> is the platform part of branch name.
+seabios-simics-<platform>-<sata/ata>-<mainline-short-version>-<date>.bin,
+where <mainline-short-version> is the version string from the branch
+name, <platform> is the platform part of branch name, and <sata/ata>
+indicates the configuration used.
 
 Similarly, if you have changed the vgabios, copy out/vgabios.bin to
 /home/virtutech/dumps/x86 and rename it to
