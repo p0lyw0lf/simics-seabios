@@ -199,28 +199,6 @@ entry_smi:
         rsm
         .code16
 
-// Entry point for QEMU smp sipi interrupts.
-        DECLFUNC entry_smp
-entry_smp:
-        // Transition to 32bit mode.
-        cli
-        cld
-        movl $2f + BUILD_BIOS_ADDR, %edx
-        jmp transition32_nmi_off
-        .code32
-        // Acquire lock and take ownership of shared stack
-1:      rep ; nop
-2:      lock btsl $0, SMPLock
-        jc 1b
-        movl SMPStack, %esp
-        // Call handle_smp
-        calll _cfunc32flat_handle_smp - BUILD_BIOS_ADDR
-        // Release lock and halt processor.
-        movl $0, SMPLock
-3:      hlt
-        jmp 3b
-        .code16
-
 // Resume (and reboot) entry point - called from entry_post
         DECLFUNC entry_resume
 entry_resume:

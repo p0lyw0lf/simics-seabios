@@ -1,4 +1,4 @@
-// QEMU multi-CPU initialization code
+// CPU count detection
 //
 // Copyright (C) 2008  Kevin O'Connor <kevin@koconnor.net>
 // Copyright (C) 2006 Fabrice Bellard
@@ -24,8 +24,8 @@
 #define MSR_LOCAL_APIC_ID 0x802
 #define MSR_IA32_APICBASE_EXTD (1ULL << 10) /* Enable x2APIC mode */
 
-struct { u32 index; u64 val; } smp_msr[33];
-u32 smp_msr_count;
+struct { u32 index; u64 val; } smp_msr[33] VARFSEG;
+u32 smp_msr_count VARFSEG;
 
 void
 wrmsr_smp(u32 index, u64 val)
@@ -53,55 +53,51 @@ smp_write_msrs(void)
         wrmsr(smp_msr[i].index, smp_msr[i].val);
 }
 
+u32 CountCPUs VARFSEG;
 u32 MaxCountCPUs;
-static u32 CountCPUs;
 // 256 bits for the found APIC IDs
-static u32 FoundAPICIDs[256/32];
+u32 FoundAPICIDs[256/32] VARFSEG;
+extern void smp_ap_boot_code(void);
+ASM16(
+    "  .global smp_ap_boot_code\n"
+    "smp_ap_boot_code:\n"
+
+    // Setup data segment
+    "  movw $" __stringify(SEG_BIOS) ", %ax\n"
+    "  movw %ax, %ds\n"
+
+    // MTRR setup
+    "  movl $smp_msr, %esi\n"
+    "  movl smp_msr_count, %ebx\n"
+    "1:testl %ebx, %ebx\n"
+    "  jz 2f\n"
+    "  movl 0(%esi), %ecx\n"
+    "  movl 4(%esi), %eax\n"
+    "  movl 8(%esi), %edx\n"
+    "  wrmsr\n"
+    "  addl $12, %esi\n"
+    "  decl %ebx\n"
+    "  jmp 1b\n"
+    "2:\n"
+
+    // get apic ID on EBX, set bit on FoundAPICIDs
+    "  movl $1, %eax\n"
+    "  cpuid\n"
+    "  shrl $24, %ebx\n"
+    "  lock btsl %ebx, FoundAPICIDs\n"
+
+    // Increment the cpu counter
+    "  lock incl CountCPUs\n"
+
+    // Halt the processor.
+    "1:hlt\n"
+    "  jmp 1b\n"
+    );
 
 int apic_id_is_present(u8 apic_id)
 {
     return !!(FoundAPICIDs[apic_id/32] & (1ul << (apic_id % 32)));
 }
-
-static int
-apic_id_init(void)
-{
-    u32 eax, ebx, ecx, cpuid_features;
-    cpuid(1, &eax, &ebx, &ecx, &cpuid_features);
-    u32 apic_id = ebx>>24;
-    if (MaxCountCPUs < 256) { // xAPIC mode
-        // Track found apic id for use in legacy internal bios tables
-        FoundAPICIDs[apic_id/32] |= 1 << (apic_id % 32);
-    } else if (ecx & CPUID_X2APIC) {
-        // switch to x2APIC mode
-        u64 apic_base = rdmsr(MSR_IA32_APIC_BASE);
-        wrmsr(MSR_IA32_APIC_BASE, apic_base | MSR_IA32_APICBASE_EXTD);
-        apic_id = rdmsr(MSR_LOCAL_APIC_ID);
-    } else {
-        // x2APIC is masked by CPUID
-        apic_id = -1;
-    }
-    return apic_id;
-}
-
-void VISIBLE32FLAT
-handle_smp(void)
-{
-    if (!CONFIG_QEMU)
-        return;
-
-    // Track this CPU and detect the apic_id
-    int apic_id = apic_id_init();
-    dprintf(DEBUG_HDL_smp, "handle_smp: apic_id=0x%x\n", apic_id);
-
-    smp_write_msrs();
-
-    CountCPUs++;
-}
-
-// Atomic lock for shared stack across processors.
-u32 SMPLock __VISIBLE;
-u32 SMPStack __VISIBLE;
 
 // find and initialize the CPUs by launching a SIPI to them
 static void
@@ -118,14 +114,17 @@ smp_scan(void)
     }
 
     // mark the BSP initial APIC ID as found, too:
-    CountCPUs = 1;
+    u8 apic_id = ebx>>24;
+    FoundAPICIDs[apic_id/32] |= (1 << (apic_id % 32));
+
+    // Init the counter.
+    writel(&CountCPUs, 1);
 
     // Setup jump trampoline to counter code.
     u64 old = *(u64*)BUILD_AP_BOOT_ADDR;
-    // ljmpw $SEG_BIOS, $(entry_smp - BUILD_BIOS_ADDR)
-    extern void entry_smp(void);
+    // ljmpw $SEG_BIOS, $(smp_ap_boot_code - BUILD_BIOS_ADDR)
     u64 new = (0xea | ((u64)SEG_BIOS<<24)
-               | (((u32)entry_smp - BUILD_BIOS_ADDR) << 8));
+               | (((u32)smp_ap_boot_code - BUILD_BIOS_ADDR) << 8));
     *(u64*)BUILD_AP_BOOT_ADDR = new;
 
     // enable local APIC
@@ -138,18 +137,11 @@ smp_scan(void)
     /* Set LINT1 as NMI, level triggered */
     writel(APIC_LINT1, 0x8400);
 
-    // Init the lock.
-    writel(&SMPLock, 1);
-
     // broadcast SIPI
     barrier();
     writel(APIC_ICR_LOW, 0x000C4500);
     u32 sipi_vector = BUILD_AP_BOOT_ADDR >> 12;
     writel(APIC_ICR_LOW, 0x000C4600 | sipi_vector);
-
-    // switch to x2APIC mode after sending SIPI so that
-    // x2APIC and xAPIC mode could share AP wake up code
-    apic_id_init();
 
     // Wait for other CPUs to process the SIPI.
     if (!CONFIG_USE_CMOS_BIOS_SMP_COUNT) {
@@ -163,28 +155,16 @@ smp_scan(void)
             udelay(1);
         }
     } else {
-            u8 expected_cpus_count = qemu_get_present_cpus_count();
-            while (expected_cpus_count != CountCPUs)
-                    asm volatile(
-                            // Release lock and allow other
-                            // processors to use the stack.
-                            "  movl %%esp, %1\n"
-                            "  movl $0, %0\n"
-                            // Reacquire lock and take back ownership of stack.
-                            "1:rep ; nop\n"
-                            "  lock btsl $0, %0\n"
-                            "  jc 1b\n"
-                            : "+m" (SMPLock), "+m" (SMPStack)
-                            : : "cc", "memory");
-            yield();
-            MaxCountCPUs = romfile_loadint("etc/max-cpus", 0);
+        u8 expected_cpus_count = qemu_get_present_cpus_count();
+    	while (expected_cpus_count + 1 != readl(&CountCPUs))
+        	yield();
     }
 
     // Restore memory.
     *(u64*)BUILD_AP_BOOT_ADDR = old;
 
-    dprintf(1, "Found %d cpu(s) max supported %d cpu(s)\n", CountCPUs,
-            MaxCountCPUs);
+    dprintf(1, "Found %d cpu(s) max supported %d cpu(s)\n", readl(&CountCPUs),
+        MaxCountCPUs);
 }
 
 void
