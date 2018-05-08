@@ -1045,7 +1045,7 @@ static int pci_bios_init_root_regions_io(struct pci_bus *bus)
     u64 sum = pci_region_sum(r_io);
     if (sum < 0x4000) {
         /* traditional region is big enougth, use it */
-        r_io->base = 0xc000;
+        r_io->base = 0x4000;
     } else if (sum < pci_io_low_end - 0x1000) {
         /* use the larger region at 0x1000 */
         r_io->base = 0x1000;
