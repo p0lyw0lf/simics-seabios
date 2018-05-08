@@ -30,8 +30,9 @@
 #define PCI_BRIDGE_IO_MIN      0x1000  // mandated by pci bridge spec
 
 #define PCI_ROM_SLOT 6
-#define PCI_NUM_REGIONS 7
+#define PCI_NUM_REGIONS 8
 #define PCI_BRIDGE_NUM_REGIONS 2
+#define PCI_SPECIAL_SLOT 7
 
 enum pci_region_type {
     PCI_REGION_TYPE_IO,
@@ -75,8 +76,20 @@ struct pci_bus {
 
 static u32 pci_bar(struct pci_device *pci, int region_num)
 {
-    if (region_num != PCI_ROM_SLOT) {
+    if ((region_num != PCI_ROM_SLOT) && (region_num != PCI_SPECIAL_SLOT)) {
         return PCI_BASE_ADDRESS_0 + region_num * 4;
+    }
+
+    if (region_num == PCI_SPECIAL_SLOT) {
+        u32 devid = pci_config_readw(pci->bdf, PCI_DEVICE_ID);
+        if (devid == PCI_DEVICE_ID_INTEL_ICH10_1) {
+            dprintf(1, "Mapping LPC RCBA\n");
+            return 0xf0;
+        } else if (devid == 0x342e) {
+            dprintf(1, "Mapping VTBAR\n");
+            return 0x180;
+        } else
+            return 0;
     }
 
 #define PCI_HEADER_TYPE_MULTI_FUNCTION 0x80
@@ -88,6 +101,8 @@ static void
 pci_set_io_region_addr(struct pci_device *pci, int bar, u64 addr, int is64)
 {
     u32 ofs = pci_bar(pci, bar);
+    if (bar == PCI_SPECIAL_SLOT)
+            addr |= 1; /* Enable BAR */
     pci_config_writel(pci->bdf, ofs, addr);
     if (is64)
         pci_config_writel(pci->bdf, ofs + 4, addr >> 32);
@@ -151,6 +166,15 @@ static int mch_pci_slot_get_irq(struct pci_device *pci, int pin)
     return pci_irqs[(pin - 1 + pin_addend) & 3];
 }
 
+static void ich10_enable_hpet(struct pci_device *pci, void *arg)
+{
+        u16 bdf = pci->bdf;
+        u32 rcba;
+        rcba = pci_config_readl(bdf, 0xf0 /* RCBA */) & 0xfffffffe;
+        dprintf(1, "Enabling HPET\n");
+        writel((char *)rcba + 0x3404, 0x80);
+}
+
 /* PIIX3/PIIX4 PCI to ISA bridge */
 static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
 {
@@ -169,6 +193,13 @@ static void piix_isa_bridge_setup(struct pci_device *pci, void *arg)
     outb(elcr[0], PIIX_PORT_ELCR1);
     outb(elcr[1], PIIX_PORT_ELCR2);
     dprintf(1, "PIIX3/PIIX4/ICH10 init: elcr=%02x %02x\n", elcr[0], elcr[1]);
+ }
+
+static void ich10_isa_brigde_init_and_hpet_enable(struct pci_device *pci,
+                                                  void *arg)
+{
+    piix_isa_bridge_setup(pci, arg);
+    ich10_enable_hpet(pci, arg);
 }
 
 static void mch_isa_lpc_setup(u16 bdf)
@@ -392,7 +423,7 @@ static const struct pci_device_id pci_device_tbl[] = {
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0,
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1,
-               piix_isa_bridge_setup),
+               ich10_isa_brigde_init_and_hpet_enable),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2,
                piix_isa_bridge_setup),
     PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3,
@@ -498,20 +529,8 @@ static void pci_bios_init_device(struct pci_device *pci)
     dprintf(1, "PCI: init bdf=%pP id=%04x:%04x\n"
             , pci, pci->vendor, pci->device);
 
-    u16 bdf = pci->bdf;
-    int class = pci_config_readw(bdf, PCI_CLASS_DEVICE);
-    /* enable memory mappings */
-    if (class != PCI_CLASS_BRIDGE_PCI) {
-            /* TODO-X58: We need to handle PCI-to-PCI bridges in a special
-               way. This should be done similarly to the PCI-to-PCI
-               initialization code in the Virtutech BIOS (search for 'Header
-               type 1. PCI-to-PCI bridge' in rombios.c). This workaround will
-               work as long as all PCI buses expect 0 (the top-level bus in the
-               northbridge) are empty. */
-            pci_config_maskw(bdf, PCI_COMMAND, 0, PCI_COMMAND_IO
-                             | PCI_COMMAND_MEMORY);
-    }
     /* map the interrupt */
+    u16 bdf = pci->bdf;
     int pin = pci_config_readb(bdf, PCI_INTERRUPT_PIN);
     if (pin != 0)
         pci_config_writeb(bdf, PCI_INTERRUPT_LINE, pci_slot_get_irq(pci, pin));
@@ -771,6 +790,24 @@ static void
 pci_bios_get_bar(struct pci_device *pci, int bar,
                  int *ptype, u64 *psize, int *pis64)
 {
+    *pis64 = 0;
+    if (bar == PCI_SPECIAL_SLOT) {
+        u32 devid = pci_config_readw(pci->bdf, PCI_DEVICE_ID);
+        if (devid == PCI_DEVICE_ID_INTEL_ICH10_1) {
+            dprintf(1, "Mapping LPC RCBA\n");
+            *psize = 0x4000;
+            *ptype = PCI_REGION_TYPE_MEM;
+        } else if (devid == 0x342e) {
+            dprintf(1, "Mapping VTBAR\n");
+            *psize = 0x2000;
+            *ptype = PCI_REGION_TYPE_MEM;
+        } else {
+            dprintf(1, "Trying to map unknown special slot!\n");
+            *psize = 0;
+            *ptype = 0;
+        }
+        return;
+    }
     u32 ofs = pci_bar(pci, bar);
     u16 bdf = pci->bdf;
     u32 old = pci_config_readl(bdf, ofs);
@@ -968,6 +1005,15 @@ static int pci_bios_check_devices(struct pci_bus *busses)
             bus = &busses[0];
         int i;
         for (i = 0; i < PCI_NUM_REGIONS; i++) {
+            if (i == PCI_SPECIAL_SLOT) {
+            	if ((pci->vendor != PCI_VENDOR_ID_INTEL)
+                	|| ((pci->device != PCI_DEVICE_ID_INTEL_ICH10_1)
+                    && (pci->device != 0x342e))) {
+                		continue;
+            	} else
+                	dprintf(1, "PCI special slot\n");
+        	}
+
             if ((pci->class == PCI_CLASS_BRIDGE_PCI) &&
                 (i >= PCI_BRIDGE_NUM_REGIONS && i < PCI_ROM_SLOT))
                 continue;
@@ -1303,9 +1349,6 @@ pci_setup(void)
     dprintf(3, "pci setup\n");
 
     setup_pci_mcfg();
-
-    u32 start = BUILD_PCIMEM_START;
-    u32 end   = BUILD_PCIMEM_END;
 
     dprintf(1, "=== PCI bus & bridge init ===\n");
     if (pci_probe_host() != 0) {
