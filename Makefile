@@ -13,17 +13,15 @@ export CONFIG_SHELL       := sh
 export KCONFIG_AUTOHEADER := autoconf.h
 export KCONFIG_CONFIG     := $(CURDIR)/.config
 export LC_ALL             := C
-CROSS_PREFIX=
-ifneq ($(CROSS_PREFIX),)
-CC=$(CROSS_PREFIX)gcc
-endif
+CROSS_PREFIX=/usr/itm/binutils/2.25.1/bin/
+CC=/usr/itm/gcc/5.5.0/bin/gcc
 AS=$(CROSS_PREFIX)as
 LD=$(CROSS_PREFIX)ld
 OBJCOPY=$(CROSS_PREFIX)objcopy
 OBJDUMP=$(CROSS_PREFIX)objdump
 STRIP=$(CROSS_PREFIX)strip
 PYTHON=python
-CPP=cpp
+CPP=/usr/itm/gcc/5.5.0/bin/cpp
 IASL:=/nfs/simics/tools/acpica-unix-20151124/generate/unix/bin/iasl
 LD32BIT_FLAG:=-melf_i386
 
