@@ -4,6 +4,7 @@
 #include "config.h" // CONFIG_VGA_EMULATE_TEXT
 #include "farptr.h" // GET_FARVAR
 #include "types.h" // u8
+#include "vgafb.h"
 
 // Save/Restore flags
 #define SR_HARDWARE   0x0001
@@ -84,5 +85,31 @@ int bda_save_restore(int cmd, u16 seg, void *data);
 struct vgamode_s *get_current_mode(void);
 int vga_set_mode(int mode, int flags);
 extern struct video_func_static static_functionality;
+
+// vgafb.c
+void init_gfx_op(struct gfx_op *op, struct vgamode_s *vmode_g);
+void handle_gfx_op(struct gfx_op *op);
+void *text_address(struct cursorpos cp);
+void vgafb_move_chars(struct cursorpos dest
+                      , struct cursorpos src, struct cursorpos movesize);
+void vgafb_clear_chars(struct cursorpos dest
+                       , struct carattr ca, struct cursorpos movesize);
+void vgafb_write_char(struct cursorpos cp, struct carattr ca);
+struct carattr vgafb_read_char(struct cursorpos cp);
+void vgafb_write_pixel(u8 color, u16 x, u16 y);
+u8 vgafb_read_pixel(u16 x, u16 y);
+void vgafb_set_swcursor(int enable);
+
+// vbe.c
+extern u32 VBE_total_memory;
+extern u32 VBE_capabilities;
+extern u32 VBE_framebuffer;
+extern u16 VBE_win_granularity;
+#define VBE_OEM_STRING "SeaBIOS VBE(C) 2011"
+#define VBE_VENDOR_STRING "SeaBIOS Developers"
+#define VBE_PRODUCT_STRING "SeaBIOS VBE Adapter"
+#define VBE_REVISION_STRING "Rev. 1"
+struct bregs;
+void handle_104f(struct bregs *regs);
 
 #endif // vgabios.h
