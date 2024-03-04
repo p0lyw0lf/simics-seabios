@@ -1,0 +1,68 @@
+Limitations
+-----------
+
+SeaBIOS is open source software with functionality maintained by the
+community. The BIOS is provided in Simics model packages to make the
+models easier to use. The functionality of the BIOS is not guaranteed
+by Wind River.
+
+Build Environment
+-----------------
+
+Seabios is supposed to be buildable with recent versions of gcc and binutils.
+Known good versions are gcc 5.1.1 and binutils 2.25-9
+
+Compiling SeaBIOS
+-----------------
+
+The SeaBIOS tar-ball is distributed in the pub/ folder of the OSS Sources
+package (#1020). Unpack the git repository:
+
+  tar xjf <path>/seabios.tar.bz2
+  cd seabios
+
+Switch to the appropriate branch. For the x86-440bx model:
+
+  git checkout 1.11-440bx
+
+For the x86-x58-ich10 model:
+
+  git checkout 1.11-x58-ich10
+
+Or for the generic Simics bios:
+
+  git checkout simics-1.11
+
+Recent older versions can be checked out via their tag. Use "git tag"
+to find the list of tags.
+
+Build:
+
+  make
+
+To use the compiled bios, point $bios to <seabios>/out/bios.bin.
+To use the compiled vgabios, point $vga_bios_image in the Simics target
+scripts to <seabios>/out/vgabios.bin
+
+More information can be found in the README.simics file in the git repository.
+
+More information is located within the Git branch.
+
+Debugging SeaBIOS
+-----------------
+
+Seabios outputs debug messages to port 0x402. A pc-config device
+object is typically installed on that port, and you can enable logging
+from that object through the log system with:
+
+  log-level $system.motherboard.conf 4.
+
+To pinpoint problems in the BIOS, a simple debug method is to add more
+debug output in the BIOS. To do that, add dprintf statements (similar
+to regular C printf) in the code and recompile. The first argument to
+dprintf is the debug level, which you would normally set to 1 to get
+the output on the debug port (0x402).
+
+The symbol table to load in Simics or gdb-remote can be found in
+<seabios>/out/rom.o. Since it is optimized code, it may be difficult
+to do stacktrace, print local variables etc.
